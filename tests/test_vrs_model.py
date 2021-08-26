@@ -10,6 +10,7 @@ from ga4gh.models.vrs_model import Number, Comparator, \
 
 
 def test_number(number):
+    """Test that Number model works correctly."""
     assert number.value == 3
     assert number.type == "Number"
 
@@ -25,11 +26,13 @@ def test_number(number):
 
 
 def test_comparator():
+    """Test that Comparator model works correctly."""
     assert Comparator.LT_OR_EQUAL == "<="
     assert Comparator.GT_OR_EQUAL == ">="
 
 
 def test_indefinite_range(indefinite_range):
+    """Test that Indefinite Range model works correctly."""
     assert indefinite_range.value == 3
     assert indefinite_range.comparator == Comparator.GT_OR_EQUAL
 
@@ -45,6 +48,7 @@ def test_indefinite_range(indefinite_range):
 
 
 def test_definite_range(definite_range):
+    """Test that Definite Range model works correctly."""
     assert definite_range.min == 22
     assert definite_range.max == 33
 
@@ -58,6 +62,7 @@ def test_definite_range(definite_range):
 
 
 def test_sequence_state():
+    """Test that Sequence State model works correctly."""
     s = SequenceState(sequence="T")
     assert s.sequence.__root__ == 'T'
     assert s.type == "SequenceState"
@@ -73,6 +78,7 @@ def test_sequence_state():
 
 
 def test_simple_interval():
+    """Test that Simple Interval model works correctly."""
     s = SimpleInterval(start=2, end=2)
     assert s.start == 2
     assert s.end == 2
@@ -89,6 +95,7 @@ def test_simple_interval():
 
 
 def test_text():
+    """Test that Text model works correctly."""
     definition = "APOE_LOSS"
     t = Text(definition=definition)
     assert t.definition == definition
@@ -113,6 +120,7 @@ def test_text():
 
 
 def test_sequence_interval(sequence_interval):
+    """Test that Sequence Interval model works correctly."""
     assert sequence_interval.start.value == 44908821
     assert sequence_interval.end.value == 44908822
     assert sequence_interval.type == "SequenceInterval"
@@ -127,6 +135,7 @@ def test_sequence_interval(sequence_interval):
 
 
 def test_cytoband_interval(cytoband_interval):
+    """Test that Cytoband Interval model works correctly."""
     human_cytoband = "q13.32"
     assert cytoband_interval.start.__root__ == human_cytoband == cytoband_interval.end.__root__
 
@@ -140,8 +149,9 @@ def test_cytoband_interval(cytoband_interval):
 
 
 def test_literal_sequence_expression():
-    l = LiteralSequenceExpression(sequence="ACGT")
-    assert l.sequence.__root__ == "ACGT"
+    """Test that Literal Sequence Expression model works correctly."""
+    lse = LiteralSequenceExpression(sequence="ACGT")
+    assert lse.sequence.__root__ == "ACGT"
 
     invalid_params = [
         {"sequence": "actg"},
@@ -154,6 +164,7 @@ def test_literal_sequence_expression():
 
 
 def test_gene():
+    """Test that Gene model works correctly."""
     g = Gene(gene_id="hgnc:5")
     assert g.gene_id.__root__ == "hgnc:5"
     assert g.type == "Gene"
@@ -168,6 +179,7 @@ def test_gene():
 
 
 def test_chromosome_location(cytoband_interval):
+    """Test that Chromosome Location model works correctly."""
     human_cytoband = "q13.32"
     human_taxonomy = "taxonomy:9606"
     c = ChromosomeLocation(
@@ -190,6 +202,7 @@ def test_chromosome_location(cytoband_interval):
 
 
 def test_sequence_location(sequence_location, sequence_interval):
+    """Test that Sequence Location model works correctly."""
     assert sequence_location.sequence_id.__root__ == \
            "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl"
     assert sequence_location.interval.start.value == 44908821
@@ -206,7 +219,7 @@ def test_sequence_location(sequence_location, sequence_interval):
             "_id": "sequence",
             "sequence_id": "NC_000007.13",
             "interval": sequence_interval
-         },
+        },
         {
             "id": "sequence:id",
             "sequence_id": "refseq:NC_000007.13",
@@ -221,6 +234,7 @@ def test_sequence_location(sequence_location, sequence_interval):
 
 def test_derived_sequence_expression(sequence_location,
                                      derived_sequence_expression):
+    """Test that Derived Sequence Expression model works correctly."""
     assert derived_sequence_expression.reverse_complement is False
 
     d = DerivedSequenceExpression(
@@ -240,8 +254,10 @@ def test_derived_sequence_expression(sequence_location,
 
 def test_repeated_sequence_expression(derived_sequence_expression, number,
                                       definite_range, indefinite_range):
+    """Test that Repeated Sequence Expression model works correctly."""
 
     def _check_seq_expr(r):
+        """Test that seq_expr has intended values."""
         assert r.seq_expr.location.sequence_id.__root__ == \
                "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl"
         assert r.seq_expr.location.interval.start.value == 44908821
@@ -285,6 +301,7 @@ def test_repeated_sequence_expression(derived_sequence_expression, number,
 
 
 def test_allele(allele, sequence_location, derived_sequence_expression):
+    """Test that Allele model works correctly."""
     assert allele.type == "Allele"
     assert allele.location.__root__.type == "SequenceLocation"
     assert allele.location.__root__.sequence_id.__root__ == \
@@ -303,6 +320,7 @@ def test_allele(allele, sequence_location, derived_sequence_expression):
 
 
 def test_haplotype(allele):
+    """Test that Haplotype model works correctly."""
     h = Haplotype(members=["ga4gh:VA.-kUJh47Pu24Y3Wdsk1rXEDKsXWNY-68x",
                            "ga4gh:VA.Z_rYRxpUvwqCLsCBO3YLl70o2uf9_Op1"])
     assert len(h.members) == 2
@@ -321,7 +339,9 @@ def test_haplotype(allele):
             Haplotype(**invalid_param)
 
 
-def test_copy_number_variation(number, definite_range, indefinite_range, gene, allele):
+def test_copy_number(number, definite_range, indefinite_range, gene,
+                     allele):
+    """Test that Copy Number model works correctly."""
     c = CopyNumber(subject=gene, copies=number)
     assert c.subject.__root__.gene_id.__root__ == "ncbigene:348"
     assert c.copies.value == 3
@@ -348,8 +368,12 @@ def test_copy_number_variation(number, definite_range, indefinite_range, gene, a
 
 
 def test_variation_set(allele, sequence_location):
+    """Test that Variation Set model works correctly."""
     v = VariationSet(members=[])
+    assert len(v.members) == 0
+
     v = VariationSet(members=[allele, allele])
+    assert len(v.members) == 2
 
     invalid_params = [
         {"members": [1]},
