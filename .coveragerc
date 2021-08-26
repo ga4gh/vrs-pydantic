@@ -1,0 +1,7 @@
+[run]
+source =
+   src/
+   tests/
+omit =
+   setup.py
+   docs/*

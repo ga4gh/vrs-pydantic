@@ -1,0 +1,17 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+pydantic = "*"
+
+[dev-packages]
+"ga4gh.models" = {editable = true, path = "."}
+pytest = "*"
+pytest-cov = "*"
+flake8 = "*"
+flake8-docstrings = "*"
+pre-commit = "*"
+coveralls = "*"
+coverage = "*"
