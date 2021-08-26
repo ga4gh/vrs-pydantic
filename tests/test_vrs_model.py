@@ -137,7 +137,7 @@ def test_sequence_interval(sequence_interval):
 def test_cytoband_interval(cytoband_interval):
     """Test that Cytoband Interval model works correctly."""
     human_cytoband = "q13.32"
-    assert cytoband_interval.start.__root__ == human_cytoband == cytoband_interval.end.__root__
+    assert cytoband_interval.start.__root__ == human_cytoband == cytoband_interval.end.__root__  # noqa: E501
 
     invalid_params = [
         {"start": "x9", "end": human_cytoband}
