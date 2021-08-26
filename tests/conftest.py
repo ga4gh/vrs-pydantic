@@ -2,7 +2,10 @@
 import pytest
 from ga4gh.models.vrs_model import SequenceInterval, \
     CytobandInterval, SequenceLocation, DerivedSequenceExpression, Number, \
-    IndefiniteRange, DefiniteRange, Allele, LiteralSequenceExpression, Gene
+    IndefiniteRange, DefiniteRange, Allele, LiteralSequenceExpression, Gene, \
+    ChromosomeLocation
+from ga4gh.models.vrsatile_model import Extension, Expression, \
+    SequenceDescriptor, LocationDescriptor, GeneDescriptor, VCFRecord
 
 
 @pytest.fixture(scope="session")
@@ -41,6 +44,16 @@ def cytoband_interval():
 
 
 @pytest.fixture(scope="session")
+def chromosome_location(cytoband_interval):
+    """Create test fixture for Chromosome Location."""
+    return ChromosomeLocation(
+        chr="19",
+        interval=cytoband_interval,
+        species_id="taxonomy:9606"
+    )
+
+
+@pytest.fixture(scope="session")
 def sequence_location(sequence_interval):
     """Create test fixture for Sequence Location."""
     return SequenceLocation(
@@ -71,3 +84,42 @@ def allele(sequence_location):
 def gene():
     """Create test fixture for Gene."""
     return Gene(gene_id="ncbigene:348")
+
+
+@pytest.fixture(scope="session")
+def extension():
+    """Create test fixture for Extension."""
+    return Extension(name="name", value=["value1", "value2"])
+
+
+@pytest.fixture(scope="session")
+def expression():
+    """Create test fixture for Expression."""
+    return Expression(syntax="hgvs:protein", value="NP_005219.2:p.Leu858Arg",
+                      version="1.0")
+
+
+@pytest.fixture(scope="session")
+def sequence_descriptor():
+    """Create test fixture for Sequence Descriptor."""
+    return SequenceDescriptor(id="vod:id", sequence_id="sequence:id")
+
+
+@pytest.fixture(scope="session")
+def location_descriptor(chromosome_location):
+    """Create test fixture for Location Descriptor."""
+    return LocationDescriptor(id="vod:id", location_id="gene:a",
+                              location=chromosome_location)
+
+
+@pytest.fixture(scope="session")
+def gene_descriptor(gene):
+    """Create test fixture for Gene Descriptor."""
+    return GeneDescriptor(id="vod:id", gene_id="gene:abl1")
+
+
+@pytest.fixture(scope="session")
+def vcf_record():
+    """Create test fixture for VCF Record."""
+    return VCFRecord(genome_assembly="grch38", chrom="9", pos=123,
+                     ref="A", alt="C")
