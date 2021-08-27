@@ -4,7 +4,7 @@ from enum import Enum
 from typing import List, Optional, Union
 from pydantic import BaseModel, Extra, Field, constr, StrictInt, StrictStr, \
     StrictBool, validator
-from ga4gh.models import return_value
+from ga4gh.vrsatile.pydantic import return_value
 
 
 class Number(BaseModel):

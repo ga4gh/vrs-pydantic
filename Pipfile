@@ -7,7 +7,7 @@ name = "pypi"
 pydantic = "*"
 
 [dev-packages]
-"ga4gh.models" = {editable = true, path = "."}
+"ga4gh.vrsatile.pydantic" = {editable = true, path = "."}
 pytest = "*"
 pytest-cov = "*"
 flake8 = "*"

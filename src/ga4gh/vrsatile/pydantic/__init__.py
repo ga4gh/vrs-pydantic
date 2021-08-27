@@ -1,4 +1,4 @@
-"""Initialize GA4GH models."""
+"""Initialize GA4GH VRSATILE Pydantic."""
 
 
 def return_value(cls, v):

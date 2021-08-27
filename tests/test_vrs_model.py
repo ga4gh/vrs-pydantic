@@ -1,7 +1,7 @@
 """Module for testing the VRS model."""
 import pydantic
 import pytest
-from ga4gh.models.vrs_model import Number, Comparator, \
+from ga4gh.vrsatile.pydantic.vrs_model import Number, Comparator, \
     IndefiniteRange, DefiniteRange, SequenceState, SimpleInterval, Text, \
     SequenceInterval, CytobandInterval, DerivedSequenceExpression, \
     LiteralSequenceExpression, RepeatedSequenceExpression, Gene, \

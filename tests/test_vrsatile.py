@@ -1,9 +1,10 @@
 """Module for testing the VRS model."""
 import pydantic
 import pytest
-from ga4gh.models.vrsatile_model import VODClassName, MoleculeContext, \
-    Extension, Expression, ValueObjectDescriptor, SequenceDescriptor, \
-    LocationDescriptor, GeneDescriptor, VariationDescriptor, VCFRecord
+from ga4gh.vrsatile.pydantic.vrsatile_model import VODClassName, \
+    MoleculeContext, Extension, Expression, ValueObjectDescriptor, \
+    SequenceDescriptor, LocationDescriptor, GeneDescriptor, \
+    VariationDescriptor, VCFRecord
 
 
 def test_vod_class_name():
