@@ -1,4 +1,4 @@
-"""Module for testing the VRS model."""
+"""Module for testing the VRSATILE model."""
 import pydantic
 import pytest
 from ga4gh.vrsatile.pydantic.vrsatile_model import VODClassName, \
@@ -183,7 +183,7 @@ def test_gene_descriptor(gene_descriptor, gene):
 
 
 def test_vcf_record(vcf_record):
-    """Test that VCR Record model works correctly."""
+    """Test that VCF Record model works correctly."""
     assert vcf_record.genome_assembly == "grch38"
     assert vcf_record.chrom == "9"
     assert vcf_record.pos == 123
