@@ -3,7 +3,8 @@ from __future__ import annotations
 from enum import Enum
 from typing import List, Optional, Union
 from pydantic import BaseModel, Extra, Field, constr, StrictInt, StrictStr, \
-    StrictBool
+    StrictBool, validator
+from ga4gh.vrsatile.pydantic import return_value
 
 
 class Number(BaseModel):
@@ -126,6 +127,8 @@ class SequenceState(BaseModel):
     type = "SequenceState"
     sequence: Sequence
 
+    _get_id_val = validator('sequence', allow_reuse=True)(return_value)
+
 
 class SimpleInterval(BaseModel):
     """DEPRECATED: A SimpleInterval represents a span of sequence.
@@ -156,6 +159,8 @@ class Text(BaseModel):
     id: Optional[CURIE] = Field(alias='_id')
     type = "Text"
     definition: StrictStr
+
+    _get_id_val = validator('id', allow_reuse=True)(return_value)
 
 
 class SequenceInterval(BaseModel):
@@ -190,6 +195,9 @@ class CytobandInterval(BaseModel):
     start: HumanCytoband
     end: HumanCytoband
 
+    _get_start_val = validator('start', allow_reuse=True)(return_value)
+    _get_end_val = validator('end', allow_reuse=True)(return_value)
+
 
 class LiteralSequenceExpression(BaseModel):
     """An explicit expression of a Sequence."""
@@ -201,6 +209,8 @@ class LiteralSequenceExpression(BaseModel):
 
     type = "LiteralSequenceExpression"
     sequence: Sequence
+
+    _get_sequence_val = validator('sequence', allow_reuse=True)(return_value)
 
 
 class Gene(BaseModel):
@@ -218,6 +228,8 @@ class Gene(BaseModel):
     type = "Gene"
     gene_id: CURIE
 
+    _get_gene_id_val = validator('gene_id', allow_reuse=True)(return_value)
+
 
 class ChromosomeLocation(BaseModel):
     """A Location on a chromosome defined by a species and chromosome name."""
@@ -233,6 +245,10 @@ class ChromosomeLocation(BaseModel):
     chr: StrictStr
     interval: CytobandInterval
 
+    _get_id_val = validator('id', allow_reuse=True)(return_value)
+    _get_species_id_val = \
+        validator('species_id', allow_reuse=True)(return_value)
+
 
 class SequenceLocation(BaseModel):
     """A Location defined by an interval on a referenced Sequence."""
@@ -246,6 +262,10 @@ class SequenceLocation(BaseModel):
     type = "SequenceLocation"
     sequence_id: CURIE
     interval: Union[SequenceInterval, SimpleInterval]
+
+    _get_id_val = validator('id', allow_reuse=True)(return_value)
+    _get_sequence_id_val = \
+        validator('sequence_id', allow_reuse=True)(return_value)
 
 
 class DerivedSequenceExpression(BaseModel):
@@ -319,6 +339,9 @@ class Allele(BaseModel):
     location: Union[CURIE, Location]
     state: Union[SequenceState, SequenceExpression]
 
+    _get_id_val = validator('id', allow_reuse=True)(return_value)
+    _get_loc_val = validator('location', allow_reuse=True)(return_value)
+
 
 class Haplotype(BaseModel):
     """A set of non-overlapping Alleles that co-occur on the same molecule."""
@@ -331,6 +354,8 @@ class Haplotype(BaseModel):
     id: Optional[CURIE] = Field(alias='_id')
     type = "Haplotype"
     members: List[Union[Allele, CURIE]] = Field(..., min_items=1)
+
+    _get_id_val = validator('id', allow_reuse=True)(return_value)
 
 
 class MolecularVariation(BaseModel):
@@ -353,6 +378,9 @@ class CopyNumber(BaseModel):
     type = "CopyNumber"
     subject: Union[MolecularVariation, Feature, SequenceExpression, CURIE]
     copies: Union[Number, IndefiniteRange, DefiniteRange]
+
+    _get_id_val = validator('id', allow_reuse=True)(return_value)
+    _get_subject_val = validator('subject', allow_reuse=True)(return_value)
 
 
 class SystemicVariation(BaseModel):
@@ -389,6 +417,9 @@ class VariationSet(BaseModel):
     id: Optional[CURIE] = Field(alias='_id')
     type = "VariationSet"
     members: List[Union[CURIE, Variation]]
+
+    _get_id_val = validator('id', allow_reuse=True)(return_value)
+    _get_members_val = validator('members', allow_reuse=True)(return_value)
 
 
 Variation.update_forward_refs()

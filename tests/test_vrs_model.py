@@ -1,11 +1,11 @@
 """Module for testing the VRS model."""
 import pydantic
 import pytest
-from ga4gh.models.vrs_model import Number, Comparator, \
+from ga4gh.vrsatile.pydantic.vrs_model import Number, Comparator, \
     IndefiniteRange, DefiniteRange, SequenceState, SimpleInterval, Text, \
     SequenceInterval, CytobandInterval, DerivedSequenceExpression, \
     LiteralSequenceExpression, RepeatedSequenceExpression, Gene, \
-    ChromosomeLocation, SequenceLocation, VariationSet, Haplotype, \
+    SequenceLocation, VariationSet, Haplotype, \
     CopyNumber, Allele
 
 
@@ -64,7 +64,7 @@ def test_definite_range(definite_range):
 def test_sequence_state():
     """Test that Sequence State model works correctly."""
     s = SequenceState(sequence="T")
-    assert s.sequence.__root__ == 'T'
+    assert s.sequence == 'T'
     assert s.type == "SequenceState"
 
     invalid_params = [
@@ -104,7 +104,7 @@ def test_text():
     t = Text(_id="ga4gh:id", definition=definition)
     assert t.definition == definition
     assert t.type == "Text"
-    assert t.id.__root__ == "ga4gh:id"
+    assert t.id == "ga4gh:id"
     t_dict = t.dict(by_alias=True)
     assert t_dict['_id'] == 'ga4gh:id'
     assert 'id' not in t_dict.keys()
@@ -137,7 +137,7 @@ def test_sequence_interval(sequence_interval):
 def test_cytoband_interval(cytoband_interval):
     """Test that Cytoband Interval model works correctly."""
     human_cytoband = "q13.32"
-    assert cytoband_interval.start.__root__ == human_cytoband == cytoband_interval.end.__root__  # noqa: E501
+    assert cytoband_interval.start == human_cytoband == cytoband_interval.end
 
     invalid_params = [
         {"start": "x9", "end": human_cytoband}
@@ -151,7 +151,7 @@ def test_cytoband_interval(cytoband_interval):
 def test_literal_sequence_expression():
     """Test that Literal Sequence Expression model works correctly."""
     lse = LiteralSequenceExpression(sequence="ACGT")
-    assert lse.sequence.__root__ == "ACGT"
+    assert lse.sequence == "ACGT"
 
     invalid_params = [
         {"sequence": "actg"},
@@ -166,7 +166,7 @@ def test_literal_sequence_expression():
 def test_gene():
     """Test that Gene model works correctly."""
     g = Gene(gene_id="hgnc:5")
-    assert g.gene_id.__root__ == "hgnc:5"
+    assert g.gene_id == "hgnc:5"
     assert g.type == "Gene"
 
     invalid_params = [
@@ -178,21 +178,15 @@ def test_gene():
             Gene(**invalid_param)
 
 
-def test_chromosome_location(cytoband_interval):
+def test_chromosome_location(chromosome_location, cytoband_interval):
     """Test that Chromosome Location model works correctly."""
-    human_cytoband = "q13.32"
-    human_taxonomy = "taxonomy:9606"
-    c = ChromosomeLocation(
-        chr="19",
-        interval=cytoband_interval,
-        species_id=human_taxonomy)
-    assert c.chr == "19"
-    assert c.interval.start.__root__ == c.interval.end.__root__ == "q13.32"
+    assert chromosome_location.chr == "19"
+    assert chromosome_location.interval.start == chromosome_location.interval.end == "q13.32"  # noqa: E501
 
     invalid_params = [
         {"chr": "K",
-         "interval": {"start": human_cytoband, "end": human_cytoband},
-         "species_id": human_taxonomy
+         "interval": {"start": "q13.32", "end": "q13.32"},
+         "species_id": "taxonomy:9606"
          }
     ]
 
@@ -203,7 +197,7 @@ def test_chromosome_location(cytoband_interval):
 
 def test_sequence_location(sequence_location, sequence_interval):
     """Test that Sequence Location model works correctly."""
-    assert sequence_location.sequence_id.__root__ == \
+    assert sequence_location.sequence_id == \
            "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl"
     assert sequence_location.interval.start.value == 44908821
     assert sequence_location.interval.end.value == 44908822
@@ -211,8 +205,8 @@ def test_sequence_location(sequence_location, sequence_interval):
 
     s = SequenceLocation(_id="sequence:id", sequence_id="refseq:NC_000007.13",
                          interval=sequence_interval)
-    assert s.id.__root__ == "sequence:id"
-    assert s.sequence_id.__root__ == "refseq:NC_000007.13"
+    assert s.id == "sequence:id"
+    assert s.sequence_id == "refseq:NC_000007.13"
 
     invalid_params = [
         {
@@ -258,7 +252,7 @@ def test_repeated_sequence_expression(derived_sequence_expression, number,
 
     def _check_seq_expr(r):
         """Test that seq_expr has intended values."""
-        assert r.seq_expr.location.sequence_id.__root__ == \
+        assert r.seq_expr.location.sequence_id == \
                "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl"
         assert r.seq_expr.location.interval.start.value == 44908821
         assert r.seq_expr.location.interval.end.value == 44908822
@@ -303,12 +297,12 @@ def test_repeated_sequence_expression(derived_sequence_expression, number,
 def test_allele(allele, sequence_location, derived_sequence_expression):
     """Test that Allele model works correctly."""
     assert allele.type == "Allele"
-    assert allele.location.__root__.type == "SequenceLocation"
-    assert allele.location.__root__.sequence_id.__root__ == \
+    assert allele.location.type == "SequenceLocation"
+    assert allele.location.sequence_id == \
            "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl"
 
     a = Allele(location="ga4gh:location", state=derived_sequence_expression)
-    assert a.location.__root__ == "ga4gh:location"
+    assert a.location == "ga4gh:location"
 
     invalid_params = [
         {"location": sequence_location, "state": sequence_location}
@@ -343,16 +337,16 @@ def test_copy_number(number, definite_range, indefinite_range, gene,
                      allele):
     """Test that Copy Number model works correctly."""
     c = CopyNumber(subject=gene, copies=number)
-    assert c.subject.__root__.gene_id.__root__ == "ncbigene:348"
+    assert c.subject.gene_id == "ncbigene:348"
     assert c.copies.value == 3
 
     c = CopyNumber(subject=gene, copies=definite_range)
-    assert c.subject.__root__.gene_id.__root__ == "ncbigene:348"
+    assert c.subject.gene_id == "ncbigene:348"
     assert c.copies.min == 22
     assert c.copies.max == 33
 
     c = CopyNumber(subject=gene, copies=indefinite_range)
-    assert c.subject.__root__.gene_id.__root__ == "ncbigene:348"
+    assert c.subject.gene_id == "ncbigene:348"
     assert c.copies.value == 3
     assert c.copies.comparator == ">="
 
@@ -372,8 +366,12 @@ def test_variation_set(allele, sequence_location):
     v = VariationSet(members=[])
     assert len(v.members) == 0
 
-    v = VariationSet(members=[allele, allele])
-    assert len(v.members) == 2
+    v = VariationSet(members=[allele])
+    assert len(v.members) == 1
+    assert allele.type == "Allele"
+    assert allele.location.type == "SequenceLocation"
+    assert allele.location.sequence_id == \
+           "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl"
 
     invalid_params = [
         {"members": [1]},

@@ -1,5 +1,5 @@
 # vrs-pydantic
-Translation of the GA4GH [VRS v1.2.0](https://vrs.ga4gh.org/en/1.2.0) Schema to a Pydantic data model
+Translation of the GA4GH [VRS v1.2.0](https://vrs.ga4gh.org/en/1.2.0) and [VRSATILE](https://vrsatile.readthedocs.io/en/latest/) schemas to a Pydantic data model
 
 # Developer instructions
 
