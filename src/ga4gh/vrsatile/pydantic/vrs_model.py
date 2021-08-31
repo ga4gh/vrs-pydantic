@@ -1,7 +1,7 @@
 """Define Pydantic Class models for VRS models."""
 from __future__ import annotations
 from enum import Enum
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Literal
 from pydantic import BaseModel, Extra, Field, constr, StrictInt, StrictStr, \
     StrictBool, validator
 from ga4gh.vrsatile.pydantic import return_value
@@ -15,7 +15,7 @@ class Number(BaseModel):
 
         extra = Extra.forbid
 
-    type = "Number"
+    type: Literal["Number"] = "Number"
     value: StrictInt
 
 
@@ -38,7 +38,7 @@ class IndefiniteRange(BaseModel):
 
         extra = Extra.forbid
 
-    type = "IndefiniteRange"
+    type: Literal["IndefiniteRange"] = "IndefiniteRange"
     value: StrictInt
     comparator: Comparator
 
@@ -51,7 +51,7 @@ class DefiniteRange(BaseModel):
 
         extra = Extra.forbid
 
-    type = "DefiniteRange"
+    type: Literal["DefiniteRange"] = "DefiniteRange"
     min: StrictInt
     max: StrictInt
 
@@ -124,7 +124,7 @@ class SequenceState(BaseModel):
 
         extra = Extra.forbid
 
-    type = "SequenceState"
+    type: Literal["SequenceState"] = "SequenceState"
     sequence: Sequence
 
     _get_id_val = validator('sequence', allow_reuse=True)(return_value)
@@ -141,7 +141,7 @@ class SimpleInterval(BaseModel):
 
         extra = Extra.forbid
 
-    type = "SimpleInterval"
+    type: Literal["SimpleInterval"] = "SimpleInterval"
     start: StrictInt
     end: StrictInt
 
@@ -157,7 +157,7 @@ class Text(BaseModel):
         extra = Extra.forbid
 
     id: Optional[CURIE] = Field(alias='_id')
-    type = "Text"
+    type: Literal["Text"] = "Text"
     definition: StrictStr
 
     _get_id_val = validator('id', allow_reuse=True)(return_value)
@@ -178,7 +178,7 @@ class SequenceInterval(BaseModel):
 
         extra = Extra.forbid
 
-    type = "SequenceInterval"
+    type: Literal["SequenceInterval"] = "SequenceInterval"
     start: Union[Number, IndefiniteRange, DefiniteRange]
     end: Union[Number, IndefiniteRange, DefiniteRange]
 
@@ -191,7 +191,7 @@ class CytobandInterval(BaseModel):
 
         extra = Extra.forbid
 
-    type = "CytobandInterval"
+    type: Literal["CytobandInterval"] = "CytobandInterval"
     start: HumanCytoband
     end: HumanCytoband
 
@@ -207,7 +207,7 @@ class LiteralSequenceExpression(BaseModel):
 
         extra = Extra.forbid
 
-    type = "LiteralSequenceExpression"
+    type: Literal["LiteralSequenceExpression"] = "LiteralSequenceExpression"
     sequence: Sequence
 
     _get_sequence_val = validator('sequence', allow_reuse=True)(return_value)
@@ -225,7 +225,7 @@ class Gene(BaseModel):
 
         extra = Extra.forbid
 
-    type = "Gene"
+    type: Literal["Gene"] = "Gene"
     gene_id: CURIE
 
     _get_gene_id_val = validator('gene_id', allow_reuse=True)(return_value)
@@ -239,7 +239,7 @@ class ChromosomeLocation(BaseModel):
 
         extra = Extra.forbid
 
-    type = "ChromosomeLocation"
+    type: Literal["ChromosomeLocation"] = "ChromosomeLocation"
     id: Optional[CURIE] = Field(alias='_id')
     species_id: CURIE
     chr: StrictStr
@@ -259,7 +259,7 @@ class SequenceLocation(BaseModel):
         extra = Extra.forbid
 
     id: Optional[CURIE] = Field(alias='_id')
-    type = "SequenceLocation"
+    type: Literal["SequenceLocation"] = "SequenceLocation"
     sequence_id: CURIE
     interval: Union[SequenceInterval, SimpleInterval]
 
@@ -281,7 +281,7 @@ class DerivedSequenceExpression(BaseModel):
 
         extra = Extra.forbid
 
-    type = "DerivedSequenceExpression"
+    type: Literal["DerivedSequenceExpression"] = "DerivedSequenceExpression"
     location: SequenceLocation
     reverse_complement: StrictBool
 
@@ -296,7 +296,7 @@ class RepeatedSequenceExpression(BaseModel):
 
         extra = Extra.forbid
 
-    type = "RepeatedSequenceExpression"
+    type: Literal["RepeatedSequenceExpression"] = "RepeatedSequenceExpression"
     seq_expr: Union[LiteralSequenceExpression, DerivedSequenceExpression]
     count: Union[Number, IndefiniteRange, DefiniteRange]
 
@@ -335,12 +335,13 @@ class Allele(BaseModel):
         extra = Extra.forbid
 
     id: Optional[CURIE] = Field(alias='_id')
-    type = "Allele"
+    type: Literal["Allele"] = "Allele"
     location: Union[CURIE, Location]
     state: Union[SequenceState, SequenceExpression]
 
     _get_id_val = validator('id', allow_reuse=True)(return_value)
     _get_loc_val = validator('location', allow_reuse=True)(return_value)
+    _get_state_val = validator('state', allow_reuse=True)(return_value)
 
 
 class Haplotype(BaseModel):
@@ -352,7 +353,7 @@ class Haplotype(BaseModel):
         extra = Extra.forbid
 
     id: Optional[CURIE] = Field(alias='_id')
-    type = "Haplotype"
+    type: Literal["Haplotype"] = "Haplotype"
     members: List[Union[Allele, CURIE]] = Field(..., min_items=1)
 
     _get_id_val = validator('id', allow_reuse=True)(return_value)
@@ -375,7 +376,7 @@ class CopyNumber(BaseModel):
         extra = Extra.forbid
 
     id: Optional[CURIE] = Field(alias='_id')
-    type = "CopyNumber"
+    type: Literal["CopyNumber"] = "CopyNumber"
     subject: Union[MolecularVariation, Feature, SequenceExpression, CURIE]
     copies: Union[Number, IndefiniteRange, DefiniteRange]
 
@@ -415,7 +416,7 @@ class VariationSet(BaseModel):
         extra = Extra.forbid
 
     id: Optional[CURIE] = Field(alias='_id')
-    type = "VariationSet"
+    type: Literal["VariationSet"] = "VariationSet"
     members: List[Union[CURIE, Variation]]
 
     _get_id_val = validator('id', allow_reuse=True)(return_value)
