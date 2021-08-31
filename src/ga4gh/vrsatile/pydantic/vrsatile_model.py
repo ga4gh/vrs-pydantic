@@ -10,6 +10,22 @@ from ga4gh.vrsatile.pydantic.vrs_model import CURIE, Allele, Haplotype, \
 from ga4gh.vrsatile.pydantic import return_value
 
 
+class VODClassName(str, Enum):
+    """Define VOD class names."""
+
+    VARIATION_DESCRIPTOR = "VariationDescriptor"
+    LOCATION_DESCRIPTOR = "LocationDescriptor"
+    SEQUENCE_DESCRIPTOR = "SequenceDescriptor"
+    GENE_DESCRIPTOR = "GeneDescriptor"
+
+
+class VRSATILETypes(str, Enum):
+    """Define types used in VRSATILE."""
+
+    EXTENSION = "Extension"
+    EXPRESSION = "Expression"
+
+
 class MoleculeContext(str, Enum):
     """The structural variant type associated with this variant."""
 
@@ -30,7 +46,7 @@ class Extension(BaseModel):
 
         extra = Extra.forbid
 
-    type: Literal["Extension"] = "Extension"
+    type: Literal[VRSATILETypes.EXTENSION] = VRSATILETypes.EXTENSION
     name: StrictStr
     value: Any
 
@@ -47,7 +63,7 @@ class Expression(BaseModel):
 
         extra = Extra.forbid
 
-    type: Literal["Expression"] = "Expression"
+    type: Literal[VRSATILETypes.EXPRESSION] = VRSATILETypes.EXPRESSION
     syntax: CURIE
     value: StrictStr
     version: Optional[StrictStr]
@@ -85,7 +101,8 @@ class SequenceDescriptor(ValueObjectDescriptor):
 
         extra = Extra.forbid
 
-    type: Literal["SequenceDescriptor"] = "SequenceDescriptor"
+    type: Literal[VODClassName.SEQUENCE_DESCRIPTOR] = \
+        VODClassName.SEQUENCE_DESCRIPTOR
     sequence_id: Optional[CURIE]
     sequence: Optional[Sequence]
     residue_type: Optional[CURIE]
@@ -113,7 +130,8 @@ class LocationDescriptor(ValueObjectDescriptor):
 
         extra = Extra.forbid
 
-    type: Literal["LocationDescriptor"] = "LocationDescriptor"
+    type: Literal[VODClassName.LOCATION_DESCRIPTOR] = \
+        VODClassName.LOCATION_DESCRIPTOR
     location_id: Optional[CURIE]
     location: Optional[Union[SequenceLocation, ChromosomeLocation]]
     sequence_descriptor: Optional[SequenceDescriptor]
@@ -138,7 +156,7 @@ class GeneDescriptor(ValueObjectDescriptor):
 
         extra = Extra.forbid
 
-    type: Literal["GeneDescriptor"] = "GeneDescriptor"
+    type: Literal[VODClassName.GENE_DESCRIPTOR] = VODClassName.GENE_DESCRIPTOR
     gene_id: Optional[CURIE]
     gene: Optional[Gene]
 
@@ -184,7 +202,8 @@ class VariationDescriptor(ValueObjectDescriptor):
 
         extra = Extra.forbid
 
-    type: Literal["VariationDescriptor"] = "VariationDescriptor"
+    type: Literal[VODClassName.VARIATION_DESCRIPTOR] = \
+        VODClassName.VARIATION_DESCRIPTOR
     variation_id: Optional[CURIE]
     variation: Optional[Union[Allele, Haplotype, CopyNumber,
                               Text, VariationSet]]
