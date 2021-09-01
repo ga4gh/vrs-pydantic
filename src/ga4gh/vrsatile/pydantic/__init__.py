@@ -13,7 +13,12 @@ def return_value(cls, v):
             if isinstance(v, list):
                 tmp = list()
                 for item in v:
-                    tmp.append(item.__root__)
+                    while True:
+                        try:
+                            item = item.__root__
+                        except AttributeError:
+                            break
+                    tmp.append(item)
                 v = tmp
             else:
                 v = v.__root__

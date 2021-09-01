@@ -1,21 +1,10 @@
 """Module for testing the VRSATILE model."""
 import pydantic
 import pytest
-from ga4gh.vrsatile.pydantic.vrsatile_model import VODClassName, \
+from ga4gh.vrsatile.pydantic.vrsatile_model import  \
     MoleculeContext, Extension, Expression, ValueObjectDescriptor, \
     SequenceDescriptor, LocationDescriptor, GeneDescriptor, \
     VariationDescriptor, VCFRecord
-
-
-def test_vod_class_name():
-    """Test that VOD Class Name model works correctly."""
-    assert [key for key in VODClassName.__members__.keys()] == \
-           ["VARIATION_DESCRIPTOR", "LOCATION_DESCRIPTOR",
-            "SEQUENCE_DESCRIPTOR", "GENE_DESCRIPTOR"]
-    assert VODClassName.VARIATION_DESCRIPTOR == "VariationDescriptor"
-    assert VODClassName.LOCATION_DESCRIPTOR == "LocationDescriptor"
-    assert VODClassName.SEQUENCE_DESCRIPTOR == "SequenceDescriptor"
-    assert VODClassName.GENE_DESCRIPTOR == "GeneDescriptor"
 
 
 def test_molecule_context():
@@ -35,13 +24,19 @@ def test_extension(extension):
     assert extension.value[1] == "value2"
     assert extension.type == "Extension"
 
-    e = Extension(name="example", value="value")
+    e = Extension(name="example", value="value", type="Extension")
     assert e.name == "example"
     assert e.value == "value"
     assert e.type == "Extension"
 
-    with pytest.raises(pydantic.error_wrappers.ValidationError):
-        Extension(name=1, value=extension.value)
+    invalid_params = [
+        {"name": 1, "value": extension.value},
+        {"name": "example", "value": extension.value, "type": "Expression"}
+    ]
+
+    for invalid_param in invalid_params:
+        with pytest.raises(pydantic.error_wrappers.ValidationError):
+            Extension(**invalid_param)
 
 
 def test_expression(expression):
@@ -51,12 +46,14 @@ def test_expression(expression):
     assert expression.version == "1.0"
     assert expression.type == "Expression"
 
-    e = Expression(syntax="hgvs:genomic", value="NC_000007.13:g.55259515T>G")
+    e = Expression(syntax="hgvs:genomic", value="NC_000007.13:g.55259515T>G",
+                   type="Expression")
     assert e.syntax == "hgvs:genomic"
     assert e.value == "NC_000007.13:g.55259515T>G"
     assert e.type == "Expression"
 
     invalid_params = [
+        {"syntax": "valid:curie", "value": expression.value, "type": "S"},
         {"syntax": "curie", "value": expression.value},
         {"syntax": expression.syntax},
         {"value": expression.value},
@@ -92,7 +89,6 @@ def test_value_object_descriptor(extension, expression):
     invalid_params = [
         {"id": "vod:", "type": "GeneDescriptor"},
         {"id": "vod:1", "type": "SequenceDescriptor", "label": [1]},
-        {"id": "vod:2", "type": "VariationD"},
         {"id": vod.id, "type": vod.type, "xrefs": ["xref", "xrefs"]},
         {"id": vod.id, "type": vod.type, "alternate_label": ["xref", "xrefs"]},
         {"id": vod.id, "type": vod.type, "alternate_labels": ["xref", 1]},
@@ -110,12 +106,15 @@ def test_sequence_descriptor(sequence_descriptor, gene):
     assert sequence_descriptor.sequence_id == "sequence:id"
     assert sequence_descriptor.type == "SequenceDescriptor"
 
-    s = SequenceDescriptor(id=sequence_descriptor.id, sequence="AC")
+    s = SequenceDescriptor(id=sequence_descriptor.id, sequence="AC",
+                           type="SequenceDescriptor")
     assert s.id == "vod:id"
     assert s.sequence == "AC"
     assert s.type == "SequenceDescriptor"
 
     invalid_params = [
+        {"id": "s:1", "sequence_id": sequence_descriptor.sequence_id,
+         "type": "VariationDescriptor"},
         {"id": "sequence", "sequence_id": sequence_descriptor.sequence_id},
         {"id": sequence_descriptor.id},
         {"id": sequence_descriptor.id, "sequence": gene}
@@ -129,6 +128,7 @@ def test_sequence_descriptor(sequence_descriptor, gene):
 def test_location_descriptor(location_descriptor, sequence_location, gene):
     """Test that Location Descriptor model works correctly."""
     assert location_descriptor.id == "vod:id"
+    assert location_descriptor.type == "LocationDescriptor"
     assert location_descriptor.location_id == "gene:a"
     assert location_descriptor.location.chr == "19"
     assert location_descriptor.location.interval.start == "q13.32"
@@ -137,7 +137,8 @@ def test_location_descriptor(location_descriptor, sequence_location, gene):
     assert location_descriptor.location.type == "ChromosomeLocation"
 
     ld = LocationDescriptor(id="vod:id2", location_id="gene:b",
-                            location=sequence_location)
+                            location=sequence_location,
+                            type="LocationDescriptor")
     assert ld.id == "vod:id2"
     assert ld.location_id == "gene:b"
     assert ld.location.sequence_id == \
@@ -150,6 +151,8 @@ def test_location_descriptor(location_descriptor, sequence_location, gene):
     assert ld.location.type == "SequenceLocation"
 
     invalid_params = [
+        {"id": "s:1", "location_id": location_descriptor.location_id,
+         "type": "SequenceDescriptor"},
         {"id": "sequence", "location_id": location_descriptor.location_id},
         {"id": location_descriptor.id},
         {"id": location_descriptor.id, "sequence": gene}
@@ -164,14 +167,17 @@ def test_gene_descriptor(gene_descriptor, gene):
     """Test that Gene Descriptor model works correctly."""
     assert gene_descriptor.id == "vod:id"
     assert gene_descriptor.gene_id == "gene:abl1"
+    assert gene_descriptor.type == "GeneDescriptor"
 
-    g = GeneDescriptor(id="vod:gene", gene=gene, gene_id="gene:348")
+    g = GeneDescriptor(id="vod:gene", gene=gene, gene_id="gene:348",
+                       type="GeneDescriptor")
     assert g.id == "vod:gene"
     assert g.gene.gene_id == "ncbigene:348"
     assert g.gene.type == "Gene"
     assert g.gene_id == "gene:348"
 
     invalid_params = [
+        {"id": "g:1", "gene_id": gene_descriptor.gene_id, "type": "Gene"},
         {"id": "sequence", "gene_id": gene_descriptor.gene_id},
         {"id": gene_descriptor.id},
         {"id": gene_descriptor.id, "gene": "BRAF"}
@@ -212,6 +218,7 @@ def test_variation_descriptor(allele, gene_descriptor, vcf_record, expression,
     assert vd.type == "VariationDescriptor"
 
     vd = VariationDescriptor(id="var:id", variation=allele,
+                             type="VariationDescriptor",
                              gene_context=gene_descriptor,
                              vcf_record=vcf_record,
                              molecule_context="genomic",
@@ -246,6 +253,7 @@ def test_variation_descriptor(allele, gene_descriptor, vcf_record, expression,
     assert vd.allelic_state == "GENO:00000875"
 
     invalid_params = [
+        {"id": "vod:id", "variation_id": "var:id", "type": "GeneDescriptor"},
         {"id": "vod:id", "variation_id": "var:id", "molecule_context": "g"},
         {"id": "vod:id", "variation_id": "var:id", "structural_type": "g"},
         {"id": "vod:id", "variation_id": "var:id", "expressions": [extension]},

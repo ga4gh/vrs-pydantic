@@ -1,10 +1,33 @@
 """Define Pydantic Class models for VRS models."""
 from __future__ import annotations
 from enum import Enum
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Literal
 from pydantic import BaseModel, Extra, Field, constr, StrictInt, StrictStr, \
     StrictBool, validator
 from ga4gh.vrsatile.pydantic import return_value
+
+
+class VRSTypes(str, Enum):
+    """Define types used in VRS."""
+
+    NUMBER = "Number"
+    INDEFINITE_RANGE = "IndefiniteRange"
+    DEFINITE_RANGE = "DefiniteRange"
+    SEQUENCE_STATE = "SequenceState"
+    SIMPLE_INTERVAL = "SimpleInterval"
+    TEXT = "Text"
+    SEQUENCE_INTERVAL = "SequenceInterval"
+    CYTOBAND_INTERVAL = "CytobandInterval"
+    LITERAL_SEQUENCE_EXPRESSION = "LiteralSequenceExpression"
+    GENE = "Gene"
+    CHROMOSOME_LOCATION = "ChromosomeLocation"
+    SEQUENCE_LOCATION = "SequenceLocation"
+    DERIVED_SEQUENCE_EXPRESSION = "DerivedSequenceExpression"
+    REPEATED_SEQUENCE_EXPRESSION = "RepeatedSequenceExpression"
+    ALLELE = "Allele"
+    HAPLOTYPE = "Haplotype"
+    COPY_NUMBER = "CopyNumber"
+    VARIATION_SET = "VariationSet"
 
 
 class Number(BaseModel):
@@ -15,7 +38,7 @@ class Number(BaseModel):
 
         extra = Extra.forbid
 
-    type = "Number"
+    type: Literal[VRSTypes.NUMBER] = VRSTypes.NUMBER
     value: StrictInt
 
 
@@ -38,7 +61,7 @@ class IndefiniteRange(BaseModel):
 
         extra = Extra.forbid
 
-    type = "IndefiniteRange"
+    type: Literal[VRSTypes.INDEFINITE_RANGE] = VRSTypes.INDEFINITE_RANGE
     value: StrictInt
     comparator: Comparator
 
@@ -51,7 +74,7 @@ class DefiniteRange(BaseModel):
 
         extra = Extra.forbid
 
-    type = "DefiniteRange"
+    type: Literal[VRSTypes.DEFINITE_RANGE] = VRSTypes.DEFINITE_RANGE
     min: StrictInt
     max: StrictInt
 
@@ -124,7 +147,7 @@ class SequenceState(BaseModel):
 
         extra = Extra.forbid
 
-    type = "SequenceState"
+    type: Literal[VRSTypes.SEQUENCE_STATE] = VRSTypes.SEQUENCE_STATE
     sequence: Sequence
 
     _get_id_val = validator('sequence', allow_reuse=True)(return_value)
@@ -141,7 +164,7 @@ class SimpleInterval(BaseModel):
 
         extra = Extra.forbid
 
-    type = "SimpleInterval"
+    type: Literal[VRSTypes.SIMPLE_INTERVAL] = VRSTypes.SIMPLE_INTERVAL
     start: StrictInt
     end: StrictInt
 
@@ -157,7 +180,7 @@ class Text(BaseModel):
         extra = Extra.forbid
 
     id: Optional[CURIE] = Field(alias='_id')
-    type = "Text"
+    type: Literal[VRSTypes.TEXT] = VRSTypes.TEXT
     definition: StrictStr
 
     _get_id_val = validator('id', allow_reuse=True)(return_value)
@@ -178,7 +201,7 @@ class SequenceInterval(BaseModel):
 
         extra = Extra.forbid
 
-    type = "SequenceInterval"
+    type: Literal[VRSTypes.SEQUENCE_INTERVAL] = VRSTypes.SEQUENCE_INTERVAL
     start: Union[Number, IndefiniteRange, DefiniteRange]
     end: Union[Number, IndefiniteRange, DefiniteRange]
 
@@ -191,7 +214,7 @@ class CytobandInterval(BaseModel):
 
         extra = Extra.forbid
 
-    type = "CytobandInterval"
+    type: Literal[VRSTypes.CYTOBAND_INTERVAL] = VRSTypes.CYTOBAND_INTERVAL
     start: HumanCytoband
     end: HumanCytoband
 
@@ -207,7 +230,8 @@ class LiteralSequenceExpression(BaseModel):
 
         extra = Extra.forbid
 
-    type = "LiteralSequenceExpression"
+    type: Literal[VRSTypes.LITERAL_SEQUENCE_EXPRESSION] = \
+        VRSTypes.LITERAL_SEQUENCE_EXPRESSION
     sequence: Sequence
 
     _get_sequence_val = validator('sequence', allow_reuse=True)(return_value)
@@ -225,7 +249,7 @@ class Gene(BaseModel):
 
         extra = Extra.forbid
 
-    type = "Gene"
+    type: Literal[VRSTypes.GENE] = VRSTypes.GENE
     gene_id: CURIE
 
     _get_gene_id_val = validator('gene_id', allow_reuse=True)(return_value)
@@ -239,7 +263,7 @@ class ChromosomeLocation(BaseModel):
 
         extra = Extra.forbid
 
-    type = "ChromosomeLocation"
+    type: Literal[VRSTypes.CHROMOSOME_LOCATION] = VRSTypes.CHROMOSOME_LOCATION
     id: Optional[CURIE] = Field(alias='_id')
     species_id: CURIE
     chr: StrictStr
@@ -259,7 +283,7 @@ class SequenceLocation(BaseModel):
         extra = Extra.forbid
 
     id: Optional[CURIE] = Field(alias='_id')
-    type = "SequenceLocation"
+    type: Literal[VRSTypes.SEQUENCE_LOCATION] = VRSTypes.SEQUENCE_LOCATION
     sequence_id: CURIE
     interval: Union[SequenceInterval, SimpleInterval]
 
@@ -281,7 +305,8 @@ class DerivedSequenceExpression(BaseModel):
 
         extra = Extra.forbid
 
-    type = "DerivedSequenceExpression"
+    type: Literal[VRSTypes.DERIVED_SEQUENCE_EXPRESSION] = \
+        VRSTypes.DERIVED_SEQUENCE_EXPRESSION
     location: SequenceLocation
     reverse_complement: StrictBool
 
@@ -296,7 +321,8 @@ class RepeatedSequenceExpression(BaseModel):
 
         extra = Extra.forbid
 
-    type = "RepeatedSequenceExpression"
+    type: Literal[VRSTypes.REPEATED_SEQUENCE_EXPRESSION] = \
+        VRSTypes.REPEATED_SEQUENCE_EXPRESSION
     seq_expr: Union[LiteralSequenceExpression, DerivedSequenceExpression]
     count: Union[Number, IndefiniteRange, DefiniteRange]
 
@@ -335,12 +361,13 @@ class Allele(BaseModel):
         extra = Extra.forbid
 
     id: Optional[CURIE] = Field(alias='_id')
-    type = "Allele"
+    type: Literal[VRSTypes.ALLELE] = VRSTypes.ALLELE
     location: Union[CURIE, Location]
     state: Union[SequenceState, SequenceExpression]
 
     _get_id_val = validator('id', allow_reuse=True)(return_value)
     _get_loc_val = validator('location', allow_reuse=True)(return_value)
+    _get_state_val = validator('state', allow_reuse=True)(return_value)
 
 
 class Haplotype(BaseModel):
@@ -352,7 +379,7 @@ class Haplotype(BaseModel):
         extra = Extra.forbid
 
     id: Optional[CURIE] = Field(alias='_id')
-    type = "Haplotype"
+    type: Literal[VRSTypes.HAPLOTYPE] = VRSTypes.HAPLOTYPE
     members: List[Union[Allele, CURIE]] = Field(..., min_items=1)
 
     _get_id_val = validator('id', allow_reuse=True)(return_value)
@@ -375,7 +402,7 @@ class CopyNumber(BaseModel):
         extra = Extra.forbid
 
     id: Optional[CURIE] = Field(alias='_id')
-    type = "CopyNumber"
+    type: Literal[VRSTypes.COPY_NUMBER] = VRSTypes.COPY_NUMBER
     subject: Union[MolecularVariation, Feature, SequenceExpression, CURIE]
     copies: Union[Number, IndefiniteRange, DefiniteRange]
 
@@ -415,7 +442,7 @@ class VariationSet(BaseModel):
         extra = Extra.forbid
 
     id: Optional[CURIE] = Field(alias='_id')
-    type = "VariationSet"
+    type: Literal[VRSTypes.VARIATION_SET] = VRSTypes.VARIATION_SET
     members: List[Union[CURIE, Variation]]
 
     _get_id_val = validator('id', allow_reuse=True)(return_value)
