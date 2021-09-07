@@ -86,11 +86,15 @@ def test_value_object_descriptor(extension, expression):
     assert vod.alternate_labels == ["a", "b"]
     assert vod.extensions == [extension]
 
+    assert ValueObjectDescriptor(id="normalize.disease:id",
+                                 type="DiseaseDescriptor",
+                                 disease_id="ncit:C53",
+                                 label="Disease label")
+
     invalid_params = [
         {"id": "vod:", "type": "GeneDescriptor"},
         {"id": "vod:1", "type": "SequenceDescriptor", "label": [1]},
         {"id": vod.id, "type": vod.type, "xrefs": ["xref", "xrefs"]},
-        {"id": vod.id, "type": vod.type, "alternate_label": ["xref", "xrefs"]},
         {"id": vod.id, "type": vod.type, "alternate_labels": ["xref", 1]},
         {"id": vod.id, "type": vod.type, "extensions": [extension, expression]}
     ]

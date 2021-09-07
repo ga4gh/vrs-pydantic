@@ -79,7 +79,7 @@ class ValueObjectDescriptor(BaseModel):
     class Config:
         """Class configs."""
 
-        extra = Extra.forbid
+        extra = Extra.allow
 
     id: CURIE
     type: StrictStr
