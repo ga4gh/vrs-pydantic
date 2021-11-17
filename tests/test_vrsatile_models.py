@@ -1,7 +1,7 @@
 """Module for testing the VRSATILE model."""
 import pydantic
 import pytest
-from ga4gh.vrsatile.pydantic.vrsatile_model import  \
+from ga4gh.vrsatile.pydantic.vrsatile_models import  \
     MoleculeContext, Extension, Expression, ValueObjectDescriptor, \
     SequenceDescriptor, LocationDescriptor, GeneDescriptor, \
     VariationDescriptor, VCFRecord
@@ -137,7 +137,7 @@ def test_location_descriptor(location_descriptor, sequence_location, gene):
     assert location_descriptor.location.chr == "19"
     assert location_descriptor.location.interval.start == "q13.32"
     assert location_descriptor.location.interval.end == "q13.32"
-    assert location_descriptor.location.species_id == "taxonomy:9606"
+    assert location_descriptor.location.species == "taxonomy:9606"
     assert location_descriptor.location.type == "ChromosomeLocation"
 
     ld = LocationDescriptor(id="vod:id2", location_id="gene:b",

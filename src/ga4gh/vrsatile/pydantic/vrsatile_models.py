@@ -4,7 +4,7 @@ from enum import Enum
 from typing import List, Optional, Union, Any, Literal
 from pydantic import BaseModel, Extra, StrictInt, StrictStr, \
     root_validator, validator
-from ga4gh.vrsatile.pydantic.vrs_model import CURIE, Allele, Haplotype, \
+from ga4gh.vrsatile.pydantic.vrs_models import CURIE, Allele, Haplotype, \
     CopyNumber, Text, VariationSet, SequenceLocation, ChromosomeLocation,\
     Sequence, Gene
 from ga4gh.vrsatile.pydantic import return_value
