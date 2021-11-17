@@ -1,8 +1,8 @@
 """Module for testing the VRS model."""
 import pydantic
 import pytest
-from ga4gh.vrsatile.pydantic.vrs_model import Number, Comparator, \
-    IndefiniteRange, DefiniteRange, SequenceState, SimpleInterval, Text, \
+from ga4gh.vrsatile.pydantic.vrs_models import Number, Comparator, \
+    IndefiniteRange, DefiniteRange, Text, \
     SequenceInterval, CytobandInterval, DerivedSequenceExpression, \
     LiteralSequenceExpression, RepeatedSequenceExpression, Gene, \
     SequenceLocation, VariationSet, Haplotype, \
@@ -69,45 +69,6 @@ def test_definite_range(definite_range):
     for invalid_param in invalid_params:
         with pytest.raises(pydantic.error_wrappers.ValidationError):
             DefiniteRange(**invalid_param)
-
-
-def test_sequence_state():
-    """Test that Sequence State model works correctly."""
-    s = SequenceState(sequence="T")
-    assert s.sequence == 'T'
-    assert s.type == "SequenceState"
-
-    assert SequenceState(sequence="T", type="SequenceState")
-
-    invalid_params = [
-        {"sequence": "t"},
-        {"sequence": "T", "type": "Sequence"},
-        {"sequence": "hello,world"}
-    ]
-
-    for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
-            SequenceState(**invalid_param)
-
-
-def test_simple_interval():
-    """Test that Simple Interval model works correctly."""
-    s = SimpleInterval(start=2, end=2)
-    assert s.start == 2
-    assert s.end == 2
-    assert s.type == "SimpleInterval"
-
-    assert SimpleInterval(start=2, end=2, type="SimpleInterval")
-
-    invalid_params = [
-        {"start": 2.0, "end": 2},
-        {"start": 2, "end": 2, "type": "CytobandInterval"},
-        {"start": 2, "end": '2'}
-    ]
-
-    for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
-            SimpleInterval(**invalid_param)
 
 
 def test_text():
@@ -227,13 +188,17 @@ def test_chromosome_location(chromosome_location, cytoband_interval):
     assert ChromosomeLocation(
         chr="19",
         interval=cytoband_interval,
-        species_id="taxonomy:9606",
+        species="taxonomy:9606",
         type="ChromosomeLocation"
     )
 
     invalid_params = [
         {"chr": "1",
          "interval": {"start": "q13.32!", "end": "q13.32"},
+         "species": "taxonomy:9606"
+         },
+        {"chr": "1",
+         "interval": {"start": "q13.32", "end": "q13.32"},
          "species_id": "taxonomy:9606"
          }
     ]
@@ -273,6 +238,15 @@ def test_sequence_location(sequence_location, sequence_interval):
             "id": "sequence:id",
             "sequence_id": "refseq:NC_000007.13",
             "interval": sequence_interval
+        },
+        {
+            "id": "sequence:id",
+            "sequence_id": "test:1",
+            "interval": {
+                "type": "SimpleInterval",
+                "start": 1,
+                "end": 2
+            }
         }
     ]
 

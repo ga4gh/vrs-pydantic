@@ -4,7 +4,7 @@ from enum import Enum
 from typing import List, Optional, Union, Any, Literal
 from pydantic import BaseModel, Extra, StrictInt, StrictStr, \
     root_validator, validator
-from ga4gh.vrsatile.pydantic.vrs_model import CURIE, Allele, Haplotype, \
+from ga4gh.vrsatile.pydantic.vrs_models import CURIE, Allele, Haplotype, \
     CopyNumber, Text, VariationSet, SequenceLocation, ChromosomeLocation,\
     Sequence, Gene
 from ga4gh.vrsatile.pydantic import return_value
@@ -134,7 +134,6 @@ class LocationDescriptor(ValueObjectDescriptor):
         VODClassName.LOCATION_DESCRIPTOR
     location_id: Optional[CURIE]
     location: Optional[Union[SequenceLocation, ChromosomeLocation]]
-    sequence_descriptor: Optional[SequenceDescriptor]
 
     @root_validator(pre=True)
     def check_location_or_location_id_present(cls, values):
@@ -213,8 +212,6 @@ class VariationDescriptor(ValueObjectDescriptor):
     vcf_record: Optional[VCFRecord]
     gene_context: Optional[Union[CURIE, GeneDescriptor]]
     vrs_ref_allele_seq: Optional[Sequence]
-    location_descriptor: Optional[LocationDescriptor]
-    sequence_descriptor: Optional[SequenceDescriptor]
     allelic_state: Optional[CURIE]
 
     _get_variation_id_val = \

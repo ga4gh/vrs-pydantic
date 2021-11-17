@@ -13,8 +13,6 @@ class VRSTypes(str, Enum):
     NUMBER = "Number"
     INDEFINITE_RANGE = "IndefiniteRange"
     DEFINITE_RANGE = "DefiniteRange"
-    SEQUENCE_STATE = "SequenceState"
-    SIMPLE_INTERVAL = "SimpleInterval"
     TEXT = "Text"
     SEQUENCE_INTERVAL = "SequenceInterval"
     CYTOBAND_INTERVAL = "CytobandInterval"
@@ -136,39 +134,6 @@ class HumanCytoband(BaseModel):
         = Field(..., example="q22.3")  # noqa: F722
 
 
-class SequenceState(BaseModel):
-    """DEPRECATED: An assertion of the state of a sequence, typically at a
-    Sequence Location within an Allele. This class is deprecated. Use
-    LiteralSequenceExpression instead.
-    """
-
-    class Config:
-        """Class configs."""
-
-        extra = Extra.forbid
-
-    type: Literal[VRSTypes.SEQUENCE_STATE] = VRSTypes.SEQUENCE_STATE
-    sequence: Sequence
-
-    _get_id_val = validator('sequence', allow_reuse=True)(return_value)
-
-
-class SimpleInterval(BaseModel):
-    """DEPRECATED: A SimpleInterval represents a span of sequence.
-    Positions are always represented by contiguous spans using interbase
-    coordinates. This class is deprecated. Use SequenceInterval instead.
-    """
-
-    class Config:
-        """Class configs."""
-
-        extra = Extra.forbid
-
-    type: Literal[VRSTypes.SIMPLE_INTERVAL] = VRSTypes.SIMPLE_INTERVAL
-    start: StrictInt
-    end: StrictInt
-
-
 class Text(BaseModel):
     """An textual representation of variation intended to capture variation
     descriptions that cannot be parsed, but still treated as variation.
@@ -265,13 +230,13 @@ class ChromosomeLocation(BaseModel):
 
     type: Literal[VRSTypes.CHROMOSOME_LOCATION] = VRSTypes.CHROMOSOME_LOCATION
     id: Optional[CURIE] = Field(alias='_id')
-    species_id: CURIE
+    species: CURIE
     chr: StrictStr
     interval: CytobandInterval
 
     _get_id_val = validator('id', allow_reuse=True)(return_value)
     _get_species_id_val = \
-        validator('species_id', allow_reuse=True)(return_value)
+        validator('species', allow_reuse=True)(return_value)
 
 
 class SequenceLocation(BaseModel):
@@ -285,7 +250,7 @@ class SequenceLocation(BaseModel):
     id: Optional[CURIE] = Field(alias='_id')
     type: Literal[VRSTypes.SEQUENCE_LOCATION] = VRSTypes.SEQUENCE_LOCATION
     sequence_id: CURIE
-    interval: Union[SequenceInterval, SimpleInterval]
+    interval: Union[SequenceInterval]
 
     _get_id_val = validator('id', allow_reuse=True)(return_value)
     _get_sequence_id_val = \
@@ -363,7 +328,7 @@ class Allele(BaseModel):
     id: Optional[CURIE] = Field(alias='_id')
     type: Literal[VRSTypes.ALLELE] = VRSTypes.ALLELE
     location: Union[CURIE, Location]
-    state: Union[SequenceState, SequenceExpression]
+    state: Union[SequenceExpression]
 
     _get_id_val = validator('id', allow_reuse=True)(return_value)
     _get_loc_val = validator('location', allow_reuse=True)(return_value)
