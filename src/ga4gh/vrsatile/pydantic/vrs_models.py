@@ -230,13 +230,13 @@ class ChromosomeLocation(BaseModel):
 
     type: Literal[VRSTypes.CHROMOSOME_LOCATION] = VRSTypes.CHROMOSOME_LOCATION
     id: Optional[CURIE] = Field(alias='_id')
-    species: CURIE
+    species_id: CURIE
     chr: StrictStr
     interval: CytobandInterval
 
     _get_id_val = validator('id', allow_reuse=True)(return_value)
     _get_species_id_val = \
-        validator('species', allow_reuse=True)(return_value)
+        validator('species_id', allow_reuse=True)(return_value)
 
 
 class SequenceLocation(BaseModel):
