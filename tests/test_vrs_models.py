@@ -188,18 +188,18 @@ def test_chromosome_location(chromosome_location, cytoband_interval):
     assert ChromosomeLocation(
         chr="19",
         interval=cytoband_interval,
-        species="taxonomy:9606",
+        species_id="taxonomy:9606",
         type="ChromosomeLocation"
     )
 
     invalid_params = [
         {"chr": "1",
          "interval": {"start": "q13.32!", "end": "q13.32"},
-         "species": "taxonomy:9606"
+         "species_id": "taxonomy:9606"
          },
         {"chr": "1",
          "interval": {"start": "q13.32", "end": "q13.32"},
-         "species_id": "taxonomy:9606"
+         "species": "taxonomy:9606"
          }
     ]
 

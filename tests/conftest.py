@@ -49,7 +49,7 @@ def chromosome_location(cytoband_interval):
     return ChromosomeLocation(
         chr="19",
         interval=cytoband_interval,
-        species="taxonomy:9606"
+        species_id="taxonomy:9606"
     )
 
 
