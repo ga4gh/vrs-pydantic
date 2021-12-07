@@ -253,7 +253,7 @@ class SequenceLocation(BaseModel):
     id: Optional[CURIE] = Field(alias='_id')
     type: Literal[VRSTypes.SEQUENCE_LOCATION] = VRSTypes.SEQUENCE_LOCATION
     sequence_id: CURIE
-    interval: Union[SequenceInterval]
+    interval: SequenceInterval
 
     _get_id_val = validator('id', allow_reuse=True)(return_value)
     _get_sequence_id_val = \
@@ -332,7 +332,7 @@ class Allele(BaseModel):
     id: Optional[CURIE] = Field(alias='_id')
     type: Literal[VRSTypes.ALLELE] = VRSTypes.ALLELE
     location: Union[CURIE, Location]
-    state: Union[SequenceExpression]
+    state: SequenceExpression
 
     _get_id_val = validator('id', allow_reuse=True)(return_value)
     _get_loc_val = validator('location', allow_reuse=True)(return_value)
