@@ -91,6 +91,9 @@ def test_text():
     params = {"definition": definition, "id": "ga4gh:id"}
     assert Text(**params)
 
+    params = {"definition": definition, "_id": "ga4gh:id"}
+    assert Text(**params)
+
     invalid_params = [
         {"definition": definition, "type": "Definition"},
         {"definition": definition, "_id": "id"}
@@ -226,6 +229,13 @@ def test_sequence_location(sequence_location, sequence_interval):
 
     params = {
         "id": "sequence:id",
+        "sequence_id": "refseq:NC_000007.13",
+        "interval": sequence_interval
+    }
+    assert SequenceLocation(**params)
+
+    params = {
+        "_id": "sequence:id",
         "sequence_id": "refseq:NC_000007.13",
         "interval": sequence_interval
     }
