@@ -143,6 +143,7 @@ class Text(BaseModel):
         """Class configs."""
 
         extra = Extra.forbid
+        allow_population_by_field_name = True
 
     id: Optional[CURIE] = Field(alias='_id')
     type: Literal[VRSTypes.TEXT] = VRSTypes.TEXT
@@ -227,6 +228,7 @@ class ChromosomeLocation(BaseModel):
         """Class configs."""
 
         extra = Extra.forbid
+        allow_population_by_field_name = True
 
     type: Literal[VRSTypes.CHROMOSOME_LOCATION] = VRSTypes.CHROMOSOME_LOCATION
     id: Optional[CURIE] = Field(alias='_id')
@@ -246,11 +248,12 @@ class SequenceLocation(BaseModel):
         """Class configs."""
 
         extra = Extra.forbid
+        allow_population_by_field_name = True
 
     id: Optional[CURIE] = Field(alias='_id')
     type: Literal[VRSTypes.SEQUENCE_LOCATION] = VRSTypes.SEQUENCE_LOCATION
     sequence_id: CURIE
-    interval: Union[SequenceInterval]
+    interval: SequenceInterval
 
     _get_id_val = validator('id', allow_reuse=True)(return_value)
     _get_sequence_id_val = \
@@ -324,11 +327,12 @@ class Allele(BaseModel):
         """Class configs."""
 
         extra = Extra.forbid
+        allow_population_by_field_name = True
 
     id: Optional[CURIE] = Field(alias='_id')
     type: Literal[VRSTypes.ALLELE] = VRSTypes.ALLELE
     location: Union[CURIE, Location]
-    state: Union[SequenceExpression]
+    state: SequenceExpression
 
     _get_id_val = validator('id', allow_reuse=True)(return_value)
     _get_loc_val = validator('location', allow_reuse=True)(return_value)
@@ -342,6 +346,7 @@ class Haplotype(BaseModel):
         """Class configs."""
 
         extra = Extra.forbid
+        allow_population_by_field_name = True
 
     id: Optional[CURIE] = Field(alias='_id')
     type: Literal[VRSTypes.HAPLOTYPE] = VRSTypes.HAPLOTYPE
@@ -365,6 +370,7 @@ class CopyNumber(BaseModel):
         """Class configs."""
 
         extra = Extra.forbid
+        allow_population_by_field_name = True
 
     id: Optional[CURIE] = Field(alias='_id')
     type: Literal[VRSTypes.COPY_NUMBER] = VRSTypes.COPY_NUMBER
@@ -405,6 +411,7 @@ class VariationSet(BaseModel):
         """Class configs."""
 
         extra = Extra.forbid
+        allow_population_by_field_name = True
 
     id: Optional[CURIE] = Field(alias='_id')
     type: Literal[VRSTypes.VARIATION_SET] = VRSTypes.VARIATION_SET

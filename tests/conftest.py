@@ -123,3 +123,37 @@ def vcf_record():
     """Create test fixture for VCF Record."""
     return VCFRecord(genome_assembly="grch38", chrom="9", pos=123,
                      ref="A", alt="C")
+
+
+@pytest.fixture(scope="session")
+def braf_v600e_variation():
+    """Create test fixture for BRAF V600E variation"""
+    return {
+        "id": "ga4gh:VA.8JkgnqIgYqufNl-OV_hpRG_aWF9UFQCE",
+        "type": "Allele",
+        "location": {
+            "id": "ga4gh:VSL.AqrQ-EkAvTrXOFn70_8i3dXF5shBBZ5i",
+            "type": "SequenceLocation",
+            "sequence_id": "ga4gh:SQ.WaAJ_cXXn9YpMNfhcq9lnzIvaB9ALawo",
+            "interval": {
+                "type": "SequenceInterval",
+                "start": {"type": "Number", "value": 639},
+                "end": {"type": "Number", "value": 640}
+            }
+        },
+        "state": {"type": "LiteralSequenceExpression", "sequence": "E"}
+    }
+
+
+@pytest.fixture(scope="session")
+def braf_v600e_vd(braf_v600e_variation):
+    """Create test fixture for BRAF V600E variation descriptor"""
+    return {
+        "id": "normalize.variation:braf%20v600e",
+        "type": "VariationDescriptor",
+        "variation_id": "ga4gh:VA.8JkgnqIgYqufNl-OV_hpRG_aWF9UFQCE",
+        "variation": braf_v600e_variation,
+        "molecule_context": "protein",
+        "structural_type": "SO:0001606",
+        "vrs_ref_allele_seq": "V"
+    }
