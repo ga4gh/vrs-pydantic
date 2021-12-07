@@ -214,12 +214,17 @@ def test_vcf_record(vcf_record):
 
 
 def test_variation_descriptor(allele, gene_descriptor, vcf_record, expression,
-                              extension):
+                              extension, braf_v600e_vd):
     """Test that Variation Descriptor model works correctly."""
     vd = VariationDescriptor(id="var:id", variation_id="variation:id")
     assert vd.id == "var:id"
     assert vd.variation_id == "variation:id"
     assert vd.type == "VariationDescriptor"
+
+    vd = VariationDescriptor(**braf_v600e_vd)
+    assert vd.variation.type == "Allele"
+    assert vd.variation.location.type == "SequenceLocation"
+    assert vd.variation.location.interval.type == "SequenceInterval"
 
     vd = VariationDescriptor(id="var:id", variation=allele,
                              type="VariationDescriptor",

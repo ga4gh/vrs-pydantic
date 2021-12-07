@@ -88,10 +88,12 @@ def test_text():
     assert t_dict['_id'] == 'ga4gh:id'
     assert 'id' not in t_dict.keys()
 
+    params = {"definition": definition, "id": "ga4gh:id"}
+    assert Text(**params)
+
     invalid_params = [
         {"definition": definition, "type": "Definition"},
-        {"definition": definition, "_id": "id"},
-        {"definition": definition, "id": "ga4gh:id"}
+        {"definition": definition, "_id": "id"}
     ]
 
     for invalid_param in invalid_params:
@@ -222,6 +224,13 @@ def test_sequence_location(sequence_location, sequence_interval):
     assert s.sequence_id == "refseq:NC_000007.13"
     assert sequence_location.type == "SequenceLocation"
 
+    params = {
+        "id": "sequence:id",
+        "sequence_id": "refseq:NC_000007.13",
+        "interval": sequence_interval
+    }
+    assert SequenceLocation(**params)
+
     invalid_params = [
         {
             "_id": "sequence",
@@ -233,11 +242,6 @@ def test_sequence_location(sequence_location, sequence_interval):
             "sequence_id": "NC_000007.13",
             "interval": sequence_interval,
             "type": "ChromosomeLocation"
-        },
-        {
-            "id": "sequence:id",
-            "sequence_id": "refseq:NC_000007.13",
-            "interval": sequence_interval
         },
         {
             "id": "sequence:id",
