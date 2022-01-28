@@ -303,6 +303,15 @@ class Feature(BaseModel):
 
     __root__: Gene
 
+    class Config:
+        """Configure Pydantic attributes."""
+
+        @staticmethod
+        def schema_extra(schema, model):
+            """Ensure JSON schema output matches original VRS model."""
+            del schema["$ref"]
+            schema["anyOf"] = [{"$ref": "#/components/schema/Gene"}]
+
 
 class Location(BaseModel):
     """A contiguous segment of a biological sequence."""
@@ -387,6 +396,15 @@ class SystemicVariation(BaseModel):
     """
 
     __root__: CopyNumber
+
+    class Config:
+        """Configure Pydantic attributes."""
+
+        @staticmethod
+        def schema_extra(schema, model):
+            """Ensure JSON schema output matches original VRS model."""
+            del schema["$ref"]
+            schema["anyOf"] = [{"$ref": "#/components/schema/CopyNumber"}]
 
 
 class Variation(BaseModel):

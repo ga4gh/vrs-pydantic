@@ -6,7 +6,7 @@ from ga4gh.vrsatile.pydantic.vrs_models import Number, Comparator, \
     SequenceInterval, CytobandInterval, DerivedSequenceExpression, \
     LiteralSequenceExpression, RepeatedSequenceExpression, Gene, \
     SequenceLocation, VariationSet, Haplotype, \
-    CopyNumber, Allele, ChromosomeLocation
+    CopyNumber, Allele, ChromosomeLocation, Feature, SystemicVariation
 
 
 def test_number(number):
@@ -445,3 +445,26 @@ def test_variation_set(allele, sequence_location):
         with pytest.raises(pydantic.error_wrappers.ValidationError):
 
             VariationSet(**invalid_param)
+
+
+def test_feature(gene):
+    """Test Feature class."""
+    schema = Feature.schema()
+    assert schema["title"] == "Feature"
+    assert schema["description"] == "A named entity that can be mapped to a Location. Genes, protein domains,\nexons, and chromosomes are some examples of common biological entities\nthat may be Features."  # noqa: E501
+    assert schema
+    assert schema["anyOf"][0]["$ref"] == "#/components/schema/Gene"
+
+    assert Feature(__root__=gene)
+
+
+def test_systemic_variation(gene, number):
+    """Test SystemicVariation class."""
+    schema = SystemicVariation.schema()
+    assert schema["title"] == "SystemicVariation"
+    assert schema["description"] == "A Variation of multiple molecules in the context of a system,\ne.g. a genome, sample, or homologous chromosomes."  # noqa: E501
+    assert schema
+    assert schema["anyOf"][0]["$ref"] == "#/components/schema/CopyNumber"
+
+    c = CopyNumber(subject=gene, copies=number)
+    assert SystemicVariation(__root__=c)
