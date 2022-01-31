@@ -453,7 +453,7 @@ def test_feature(gene):
     assert schema["title"] == "Feature"
     assert schema["description"] == "A named entity that can be mapped to a Location. Genes, protein domains,\nexons, and chromosomes are some examples of common biological entities\nthat may be Features."  # noqa: E501
     assert schema
-    assert schema["anyOf"][0]["$ref"] == "#/components/schema/Gene"
+    assert schema["anyOf"][0]["$ref"] == "#/components/schemas/Gene"
 
     assert Feature(__root__=gene)
 
@@ -464,7 +464,7 @@ def test_systemic_variation(gene, number):
     assert schema["title"] == "SystemicVariation"
     assert schema["description"] == "A Variation of multiple molecules in the context of a system,\ne.g. a genome, sample, or homologous chromosomes."  # noqa: E501
     assert schema
-    assert schema["anyOf"][0]["$ref"] == "#/components/schema/CopyNumber"
+    assert schema["anyOf"][0]["$ref"] == "#/components/schemas/CopyNumber"
 
     c = CopyNumber(subject=gene, copies=number)
     assert SystemicVariation(__root__=c)
