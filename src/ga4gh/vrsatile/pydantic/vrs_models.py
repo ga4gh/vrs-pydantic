@@ -310,7 +310,7 @@ class Feature(BaseModel):
         def schema_extra(schema, model):
             """Ensure JSON schema output matches original VRS model."""
             del schema["$ref"]
-            schema["anyOf"] = [{"$ref": "#/components/schema/Gene"}]
+            schema["anyOf"] = [{"$ref": "#/components/schemas/Gene"}]
 
 
 class Location(BaseModel):
@@ -404,7 +404,7 @@ class SystemicVariation(BaseModel):
         def schema_extra(schema, model):
             """Ensure JSON schema output matches original VRS model."""
             del schema["$ref"]
-            schema["anyOf"] = [{"$ref": "#/components/schema/CopyNumber"}]
+            schema["anyOf"] = [{"$ref": "#/components/schemas/CopyNumber"}]
 
 
 class Variation(BaseModel):
