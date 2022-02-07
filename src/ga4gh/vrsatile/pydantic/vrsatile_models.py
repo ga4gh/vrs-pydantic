@@ -8,8 +8,8 @@ from pydantic import BaseModel, Extra, StrictInt, StrictStr, \
 
 from ga4gh.vrsatile.pydantic import return_value
 from ga4gh.vrsatile.pydantic.vrs_models import CURIE, Allele, Haplotype, \
-    CopyNumber, Text, VariationSet, SequenceLocation, ChromosomeLocation,\
-    Sequence, Gene, Variation
+    CopyNumber, Text, VariationSet, SequenceLocation, ChromosomeLocation, \
+    Sequence, Gene
 
 
 class VODClassName(str, Enum):
