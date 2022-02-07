@@ -361,5 +361,3 @@ def test_categorical_variation(allele):
     assert op_1.variation.location.interval.start.value == 140753336
     assert op_1.variation.location.interval.end.value == 140753337
     assert op_1.variation.state.sequence == "T"
-
-
