@@ -228,7 +228,8 @@ class VariationDescriptor(ValueObjectDescriptor):
         validator('allelic_state', allow_reuse=True)(return_value)
 
 
-class CategoricalVariationClassName(str, Enum):
+class CategoricalVariationType(str, Enum):
+    """Possible types for Categorical Variations."""
 
     CANONICAL_VARIATION = "CanonicalVariation"
     COMPLEX_VARIATION = "ComplexVariation"
@@ -241,7 +242,7 @@ class CategoricalVariation(BaseModel):
     """
 
     id: Optional[CURIE] = Field(..., alias="_id")
-    type: CategoricalVariationClassName
+    type: CategoricalVariationType
     complement: bool
 
     _get_id_val = validator("id", allow_reuse=True)(return_value)
@@ -253,8 +254,8 @@ class CanonicalVariation(CategoricalVariation):
     otherwise directly align.
     """
 
-    type: Literal[CategoricalVariationClassName.CANONICAL_VARIATION] = \
-        CategoricalVariationClassName.CANONICAL_VARIATION
+    type: Literal[CategoricalVariationType.CANONICAL_VARIATION] = \
+        CategoricalVariationType.CANONICAL_VARIATION
     variation: Optional[Union[Allele, Haplotype, CopyNumber,
                               Text, VariationSet]]
 
@@ -271,7 +272,7 @@ class ComplexVariation(CategoricalVariation):
     other categorical variation domains.
     """
 
-    type: Literal[CategoricalVariationClassName.COMPLEX_VARIATION] = \
-        CategoricalVariationClassName.COMPLEX_VARIATION
+    type: Literal[CategoricalVariationType.COMPLEX_VARIATION] = \
+        CategoricalVariationType.COMPLEX_VARIATION
     operands: List[CategoricalVariation]
     operator: ComplexVariationOperator
