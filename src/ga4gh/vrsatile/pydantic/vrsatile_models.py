@@ -2,12 +2,14 @@
 from __future__ import annotations
 from enum import Enum
 from typing import List, Optional, Union, Any, Literal
+
 from pydantic import BaseModel, Extra, StrictInt, StrictStr, \
-    root_validator, validator
+    root_validator, validator, Field
+
+from ga4gh.vrsatile.pydantic import return_value
 from ga4gh.vrsatile.pydantic.vrs_models import CURIE, Allele, Haplotype, \
     CopyNumber, Text, VariationSet, SequenceLocation, ChromosomeLocation,\
-    Sequence, Gene
-from ga4gh.vrsatile.pydantic import return_value
+    Sequence, Gene, Variation
 
 
 class VODClassName(str, Enum):
@@ -222,5 +224,54 @@ class VariationDescriptor(ValueObjectDescriptor):
         validator('gene_context', allow_reuse=True)(return_value)
     _get_vrs_allele_ref_seq_val = \
         validator('vrs_ref_allele_seq', allow_reuse=True)(return_value)
-    _get_allelic_statee_val = \
+    _get_allelic_state_val = \
         validator('allelic_state', allow_reuse=True)(return_value)
+
+
+class CategoricalVariationClassName(str, Enum):
+
+    CANONICAL_VARIATION = "CanonicalVariation"
+    COMPLEX_VARIATION = "ComplexVariation"
+
+
+class CategoricalVariation(BaseModel):
+    """A representation of a categorically-defined `functional domain
+    <https://en.wikipedia.org/wiki/Domain_of_a_function>`_ for variation, in
+    which individual variation instances may be members.
+    """
+
+    id: Optional[CURIE] = Field(..., alias="_id")
+    type: CategoricalVariationClassName
+    complement: bool
+
+    _get_id_val = validator("id", allow_reuse=True)(return_value)
+
+
+class CanonicalVariation(CategoricalVariation):
+    """A categorical variation domain characterized by a representative
+    Variation context to which members lift-over, project, translate, or
+    otherwise directly align.
+    """
+
+    type: Literal[CategoricalVariationClassName.CANONICAL_VARIATION] = \
+        CategoricalVariationClassName.CANONICAL_VARIATION
+    variation: Optional[Union[Allele, Haplotype, CopyNumber,
+                              Text, VariationSet]]
+
+
+class ComplexVariationOperator(str, Enum):
+    """Possible values for the Complex Variation's `operator` field."""
+
+    AND = "AND"
+    OR = "OR"
+
+
+class ComplexVariation(CategoricalVariation):
+    """A categorical variation domain jointly characterized by two or more
+    other categorical variation domains.
+    """
+
+    type: Literal[CategoricalVariationClassName.COMPLEX_VARIATION] = \
+        CategoricalVariationClassName.COMPLEX_VARIATION
+    operands: List[CategoricalVariation]
+    operator: ComplexVariationOperator
