@@ -1,4 +1,14 @@
 """Initialize GA4GH VRSATILE Pydantic."""
+from pydantic import BaseModel, Extra
+
+
+class BaseModelForbidExtra(BaseModel):
+    """Base Pydantic model class with extra values forbidden."""
+
+    class Config:
+        """Class configs."""
+
+        extra = Extra.forbid
 
 
 def return_value(cls, v):

@@ -2,9 +2,11 @@
 from __future__ import annotations
 from enum import Enum
 from typing import List, Optional, Union, Literal
+
 from pydantic import BaseModel, Extra, Field, constr, StrictInt, StrictStr, \
     StrictBool, validator
-from ga4gh.vrsatile.pydantic import return_value
+
+from ga4gh.vrsatile.pydantic import return_value, BaseModelForbidExtra
 
 
 class VRSTypes(str, Enum):
@@ -47,17 +49,12 @@ class Comparator(str, Enum):
     GT_OR_EQUAL = ">="
 
 
-class IndefiniteRange(BaseModel):
+class IndefiniteRange(BaseModelForbidExtra):
     """An indefinite range represented as a number and associated comparator.
     The bound operator is interpreted as follows: `>=` are all values greater
     than and including the value, `<=` are all numbers less than and including
     the value.
     """
-
-    class Config:
-        """Class configs."""
-
-        extra = Extra.forbid
 
     type: Literal[VRSTypes.INDEFINITE_RANGE] = VRSTypes.INDEFINITE_RANGE
     value: StrictInt
@@ -77,23 +74,18 @@ class DefiniteRange(BaseModel):
     max: StrictInt
 
 
-class Sequence(BaseModel):
+class Sequence(BaseModelForbidExtra):
     """A character string of residues that represents a biological sequence
     using the conventional sequence order (5’-to-3’ for nucleic acid sequences,
     and amino-to-carboxyl for amino acid sequences). IUPAC ambiguity codes
     are permitted in Sequences.
     """
 
-    class Config:
-        """Class configs."""
-
-        extra = Extra.forbid
-
     __root__: constr(regex=r"^[A-Z*\-]*$") \
         = Field(..., example="ACTG")  # noqa: F722
 
 
-class CURIE(BaseModel):
+class CURIE(BaseModelForbidExtra):
     """A string that refers to an object uniquely.  The lifetime and scope of
     an id is defined by the sender. VRS does not impose any constraints on
     strings used as ids in messages. However, to maximize sharability of data,
@@ -110,25 +102,15 @@ class CURIE(BaseModel):
     strongly discouraged.
     """
 
-    class Config:
-        """Class configs."""
-
-        extra = Extra.forbid
-
     __root__: constr(regex=r"^\w[^:]*:.+$") = \
         Field(..., example="ensembl:ENSG00000139618")  # noqa: F722
 
 
-class HumanCytoband(BaseModel):
+class HumanCytoband(BaseModelForbidExtra):
     """A interval on a stained metaphase chromosome specified by cytobands.
     CytobandIntervals include the regions described by the start and end
     cytobands.
     """
-
-    class Config:
-        """Class configs."""
-
-        extra = Extra.forbid
 
     __root__: constr(regex=r"^cen|[pq](ter|([1-9][0-9]*(\.[1-9][0-9]*)?))$") \
         = Field(..., example="q22.3")  # noqa: F722
@@ -139,10 +121,9 @@ class Text(BaseModel):
     descriptions that cannot be parsed, but still treated as variation.
     """
 
-    class Config:
+    class Config(BaseModelForbidExtra.Config):
         """Class configs."""
 
-        extra = Extra.forbid
         allow_population_by_field_name = True
 
     id: Optional[CURIE] = Field(alias='_id')
@@ -152,7 +133,7 @@ class Text(BaseModel):
     _get_id_val = validator('id', allow_reuse=True)(return_value)
 
 
-class SequenceInterval(BaseModel):
+class SequenceInterval(BaseModelForbidExtra):
     """A SequenceInterval represents a span of sequence. Positions are always
     represented by contiguous spans using interbase coordinates.
     SequenceInterval is intended to be compatible with that in Sequence
@@ -162,23 +143,13 @@ class SequenceInterval(BaseModel):
     greater than zero.
     """
 
-    class Config:
-        """Class configs."""
-
-        extra = Extra.forbid
-
     type: Literal[VRSTypes.SEQUENCE_INTERVAL] = VRSTypes.SEQUENCE_INTERVAL
     start: Union[Number, IndefiniteRange, DefiniteRange]
     end: Union[Number, IndefiniteRange, DefiniteRange]
 
 
-class CytobandInterval(BaseModel):
+class CytobandInterval(BaseModelForbidExtra):
     """A contiguous region specified by chromosomal bands features."""
-
-    class Config:
-        """Class configs."""
-
-        extra = Extra.forbid
 
     type: Literal[VRSTypes.CYTOBAND_INTERVAL] = VRSTypes.CYTOBAND_INTERVAL
     start: HumanCytoband
@@ -188,13 +159,8 @@ class CytobandInterval(BaseModel):
     _get_end_val = validator('end', allow_reuse=True)(return_value)
 
 
-class LiteralSequenceExpression(BaseModel):
+class LiteralSequenceExpression(BaseModelForbidExtra):
     """An explicit expression of a Sequence."""
-
-    class Config:
-        """Class configs."""
-
-        extra = Extra.forbid
 
     type: Literal[VRSTypes.LITERAL_SEQUENCE_EXPRESSION] = \
         VRSTypes.LITERAL_SEQUENCE_EXPRESSION
@@ -203,17 +169,12 @@ class LiteralSequenceExpression(BaseModel):
     _get_sequence_val = validator('sequence', allow_reuse=True)(return_value)
 
 
-class Gene(BaseModel):
+class Gene(BaseModelForbidExtra):
     """A gene is an authoritative representation of one or more heritable
     :ref:`Locations <Location>` that includes all sequence elements necessary
     to perform a biological function. A gene may include regulatory,
     transcribed, and/or other functional Locations.
     """
-
-    class Config:
-        """Class configs."""
-
-        extra = Extra.forbid
 
     type: Literal[VRSTypes.GENE] = VRSTypes.GENE
     gene_id: CURIE
@@ -224,10 +185,9 @@ class Gene(BaseModel):
 class ChromosomeLocation(BaseModel):
     """A Location on a chromosome defined by a species and chromosome name."""
 
-    class Config:
+    class Config(BaseModelForbidExtra.Config):
         """Class configs."""
 
-        extra = Extra.forbid
         allow_population_by_field_name = True
 
     type: Literal[VRSTypes.CHROMOSOME_LOCATION] = VRSTypes.CHROMOSOME_LOCATION
@@ -244,10 +204,9 @@ class ChromosomeLocation(BaseModel):
 class SequenceLocation(BaseModel):
     """A Location defined by an interval on a referenced Sequence."""
 
-    class Config:
+    class Config(BaseModelForbidExtra.Config):
         """Class configs."""
 
-        extra = Extra.forbid
         allow_population_by_field_name = True
 
     id: Optional[CURIE] = Field(alias='_id')
@@ -260,7 +219,7 @@ class SequenceLocation(BaseModel):
         validator('sequence_id', allow_reuse=True)(return_value)
 
 
-class DerivedSequenceExpression(BaseModel):
+class DerivedSequenceExpression(BaseModelForbidExtra):
     """An approximate expression of a sequence that is derived from a
     referenced sequence location. Use of DerivedSequenceExpression indicates
     that the derived sequence is approximately equivalent to the reference
@@ -268,26 +227,16 @@ class DerivedSequenceExpression(BaseModel):
     where the precision of a literal sequence is unnecessary.
     """
 
-    class Config:
-        """Class configs."""
-
-        extra = Extra.forbid
-
     type: Literal[VRSTypes.DERIVED_SEQUENCE_EXPRESSION] = \
         VRSTypes.DERIVED_SEQUENCE_EXPRESSION
     location: SequenceLocation
     reverse_complement: StrictBool
 
 
-class RepeatedSequenceExpression(BaseModel):
+class RepeatedSequenceExpression(BaseModelForbidExtra):
     """An expression of a sequence comprised of a tandem repeating
     subsequence.
     """
-
-    class Config:
-        """Class configs."""
-
-        extra = Extra.forbid
 
     type: Literal[VRSTypes.REPEATED_SEQUENCE_EXPRESSION] = \
         VRSTypes.REPEATED_SEQUENCE_EXPRESSION
@@ -332,10 +281,9 @@ class SequenceExpression(BaseModel):
 class Allele(BaseModel):
     """The sequence state at a Location."""
 
-    class Config:
+    class Config(BaseModelForbidExtra.Config):
         """Class configs."""
 
-        extra = Extra.forbid
         allow_population_by_field_name = True
 
     id: Optional[CURIE] = Field(alias='_id')
@@ -351,10 +299,9 @@ class Allele(BaseModel):
 class Haplotype(BaseModel):
     """A set of non-overlapping Alleles that co-occur on the same molecule."""
 
-    class Config:
+    class Config(BaseModelForbidExtra.Config):
         """Class configs."""
 
-        extra = Extra.forbid
         allow_population_by_field_name = True
 
     id: Optional[CURIE] = Field(alias='_id')
@@ -375,10 +322,9 @@ class CopyNumber(BaseModel):
     other molecule within a genome.
     """
 
-    class Config:
+    class Config(BaseModelForbidExtra.Config):
         """Class configs."""
 
-        extra = Extra.forbid
         allow_population_by_field_name = True
 
     id: Optional[CURIE] = Field(alias='_id')
@@ -425,10 +371,9 @@ class UtilityVariation(BaseModel):
 class VariationSet(BaseModel):
     """An unconstrained set of Variation members."""
 
-    class Config:
+    class Config(BaseModelForbidExtra.Config):
         """Class configs."""
 
-        extra = Extra.forbid
         allow_population_by_field_name = True
 
     id: Optional[CURIE] = Field(alias='_id')
