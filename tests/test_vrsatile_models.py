@@ -302,6 +302,15 @@ def test_canonical_variation(allele):
     assert set(cv.schema()["properties"].keys()) == {"_id", "type",
                                                      "complement", "variation"}
 
+    # check forbid extra
+    with pytest.raises(pydantic.error_wrappers.ValidationError):
+        cv = CanonicalVariation(
+            _id="clinvar:13961",
+            complement=False,
+            variation=allele,
+            variation_id="clinvar:13961"
+        )
+
 
 def test_categorical_variation(allele):
     """Test creation and usage of categorical variations."""
@@ -340,9 +349,10 @@ def test_categorical_variation(allele):
 
     assert len(cv.operands) == 2
 
-    op_0 = cv.operands[0]
+    op_0: CanonicalVariation = cv.operands[0]
     assert op_0.id == "clinvar:13961"
     assert op_0.complement is False
+    assert op_0.variation is not None
     assert op_0.variation.type == "Allele"
     assert op_0.variation.location.type == "SequenceLocation"
     assert op_0.variation.location.sequence_id == \
@@ -351,9 +361,10 @@ def test_categorical_variation(allele):
     assert op_0.variation.location.interval.end.value == 44908822
     assert op_0.variation.state.sequence == "C"
 
-    op_1 = cv.operands[1]
+    op_1: CanonicalVariation = cv.operands[1]
     assert op_1.id == "clinvar:375941"
     assert op_1.complement is False
+    assert op_1.variation is not None
     assert op_1.variation.type == "Allele"
     assert op_1.variation.location.type == "SequenceLocation"
     assert op_1.variation.location.sequence_id == \
@@ -361,3 +372,17 @@ def test_categorical_variation(allele):
     assert op_1.variation.location.interval.start.value == 140753336
     assert op_1.variation.location.interval.end.value == 140753337
     assert op_1.variation.state.sequence == "T"
+
+    with pytest.raises(pydantic.ValidationError):
+        ComplexVariation(
+            _id="complex:variation",
+            operands=[
+                CanonicalVariation(
+                    _id="clinvar:13961",
+                    complement=False,
+                    variation=allele
+                )
+            ],
+            operator=ComplexVariationOperator.OR,
+            complement=False
+        )
