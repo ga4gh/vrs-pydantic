@@ -295,7 +295,7 @@ class CategoricalVariationDescriptor(VariationDescriptor):
         validator('categorical_variation_id', allow_reuse=True)(return_value)
 
     @root_validator(pre=True)
-    def check_operands_length(cls, values):
-        """Check that `operands` contains >=1 objects"""
-        assert len(values.get("operands")) >= 1
+    def check_members_length(cls, values):
+        """Check that `members` contains >=1 objects"""
+        assert len(values.get("members", [])) >= 1
         return values
