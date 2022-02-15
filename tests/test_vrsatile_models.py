@@ -8,7 +8,63 @@ from ga4gh.vrsatile.pydantic.vrsatile_models import  \
     MoleculeContext, Extension, Expression, ValueObjectDescriptor, \
     SequenceDescriptor, LocationDescriptor, GeneDescriptor, \
     VariationDescriptor, VCFRecord, CanonicalVariation, ComplexVariation, \
-    ComplexVariationOperator
+    ComplexVariationOperator, CategoricalVariationDescriptor
+
+
+@pytest.fixture(scope="module")
+def simple_repeating_del():
+    """Provide example of a complete Categorical Variation Descriptor."""
+    return {
+        "id": "clinvar:17014",
+        "version": "2022-02-10",
+        "type": "CategoricalVariationDescriptor",
+        "categorical_variation": {
+            "_id": "unk:?",
+            "complement": False,
+            "type": "CanonicalVariation",
+            "variation": {
+                "_id": "ga4gh:VA.KGopzor-bEw8Ot5sAQQ5o5SVx4o7TuLN",
+                "type": "Allele",
+                "location": {
+                    "_id": "ga4gh:VSL.p4e9kMEY9PrKZ1BbNRuFr6n30DkwXWlX",
+                    "type": "SequenceLocation",
+                    "sequence_id": "ga4gh:SQ._0wi-qoDrvram155UmcSC-zA5ZK4fpLT",
+                    "interval": {
+                        "type": "SequenceInterval",
+                        "start": {
+                            "type": "Number",
+                            "value": 20189346
+                        },
+                        "end": {
+                            "type": "Number",
+                            "value": 20189349
+                        }
+                    }
+                },
+                "state": {
+                    "type": "LiteralSequenceExpression",
+                    "sequence": "GG"
+                }
+            }
+        },
+        "members": [
+            {
+                "expressions": [
+                    {
+                        "type": "Expression",
+                        "syntax": "hgvs.g",
+                        "value": "NC_000013.10:g.20763488del",
+                    },
+                    {
+                        "type": "Expression",
+                        "syntax": "hgvs.c",
+                        "value": "LRG_1350t1:c.235del"
+                    }
+                ],
+                "variation_id": "ga4gh:VA.KGopzor-bEw8Ot5sAQQ5o5SVx4o7TuLN"
+            }
+        ]
+    }
 
 
 def test_molecule_context():
@@ -45,14 +101,14 @@ def test_extension(extension):
 
 def test_expression(expression):
     """Test that Expression model works correctly."""
-    assert expression.syntax == "hgvs:protein"
+    assert expression.syntax == "hgvs.p"
     assert expression.value == "NP_005219.2:p.Leu858Arg"
     assert expression.version == "1.0"
     assert expression.type == "Expression"
 
-    e = Expression(syntax="hgvs:genomic", value="NC_000007.13:g.55259515T>G",
+    e = Expression(syntax="hgvs.g", value="NC_000007.13:g.55259515T>G",
                    type="Expression")
-    assert e.syntax == "hgvs:genomic"
+    assert e.syntax == "hgvs.g"
     assert e.value == "NC_000007.13:g.55259515T>G"
     assert e.type == "Expression"
 
@@ -258,7 +314,7 @@ def test_variation_descriptor(allele, gene_descriptor, vcf_record, expression,
     assert vd.vcf_record.alt == "C"
     assert vd.molecule_context == "genomic"
     assert len(vd.expressions) == 1
-    assert vd.expressions[0].syntax == "hgvs:protein"
+    assert vd.expressions[0].syntax == "hgvs.p"
     assert vd.expressions[0].value == "NP_005219.2:p.Leu858Arg"
     assert vd.expressions[0].version == "1.0"
     assert vd.structural_type == "SO:0001537"
@@ -386,3 +442,33 @@ def test_categorical_variation(allele):
             operator=ComplexVariationOperator.OR,
             complement=False
         )
+
+
+def test_categorical_variation_descriptor(simple_repeating_del):
+    """Test categorical variation descriptor"""
+    cvd = CategoricalVariationDescriptor(**simple_repeating_del)
+    assert cvd.id == "clinvar:17014"
+    assert cvd.version == "2022-02-10"
+    assert cvd.type == "CategoricalVariationDescriptor"
+    assert cvd.categorical_variation.id == "unk:?"
+    assert cvd.categorical_variation.complement is False
+    assert cvd.categorical_variation.type == "CanonicalVariation"
+    assert cvd.categorical_variation.variation.id == \
+        "ga4gh:VA.KGopzor-bEw8Ot5sAQQ5o5SVx4o7TuLN"
+    location = cvd.categorical_variation.variation.location
+    assert location.id == "ga4gh:VSL.p4e9kMEY9PrKZ1BbNRuFr6n30DkwXWlX"
+    assert location.sequence_id == "ga4gh:SQ._0wi-qoDrvram155UmcSC-zA5ZK4fpLT"
+    assert location.interval.type == "SequenceInterval"
+    assert cvd.categorical_variation.variation.state.sequence == "GG"
+
+    assert len(cvd.members) == 1
+    member = cvd.members[0]
+    assert member.variation_id == "ga4gh:VA.KGopzor-bEw8Ot5sAQQ5o5SVx4o7TuLN"
+    assert len(member.expressions) == 2
+    expressions = sorted(member.expressions, key=lambda e: e.value)
+    assert expressions[0].type == "Expression"
+    assert expressions[0].syntax == "hgvs.c"
+    assert expressions[0].value == "LRG_1350t1:c.235del"
+    assert expressions[1].type == "Expression"
+    assert expressions[1].syntax == "hgvs.g"
+    assert expressions[1].value == "NC_000013.10:g.20763488del"

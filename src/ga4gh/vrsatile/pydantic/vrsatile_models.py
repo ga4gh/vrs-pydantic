@@ -287,8 +287,15 @@ class CategoricalVariationDescriptor(VariationDescriptor):
         VODClassName.CATEGORICAL_VARIATION_DESCRIPTOR
     version: Optional[StrictStr]
     categorical_variation_id: Optional[CURIE]
-    categorical_variation: Optional[CategoricalVariation]
+    categorical_variation: Optional[Union[CanonicalVariation,
+                                          ComplexVariation]]
     members: Optional[List[VariationMember]]
 
     _get_categorical_variation_id_val = \
         validator('categorical_variation_id', allow_reuse=True)(return_value)
+
+    @root_validator(pre=True)
+    def check_operands_length(cls, values):
+        """Check that `operands` contains >=1 objects"""
+        assert len(values.get("operands")) >= 1
+        return values
