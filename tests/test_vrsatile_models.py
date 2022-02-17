@@ -1,10 +1,14 @@
 """Module for testing the VRSATILE model."""
 import pydantic
 import pytest
+
+from ga4gh.vrsatile.pydantic.vrs_models import Number, SequenceLocation, \
+    SequenceInterval, LiteralSequenceExpression, Allele, Sequence
 from ga4gh.vrsatile.pydantic.vrsatile_models import  \
     MoleculeContext, Extension, Expression, ValueObjectDescriptor, \
     SequenceDescriptor, LocationDescriptor, GeneDescriptor, \
-    VariationDescriptor, VCFRecord
+    VariationDescriptor, VCFRecord, CanonicalVariation, ComplexVariation, \
+    ComplexVariationOperator
 
 
 def test_molecule_context():
@@ -276,3 +280,109 @@ def test_variation_descriptor(allele, gene_descriptor, vcf_record, expression,
     for invalid_param in invalid_params:
         with pytest.raises(pydantic.error_wrappers.ValidationError):
             VariationDescriptor(**invalid_param)
+
+
+def test_canonical_variation(allele):
+    """Test creation and usage of canonical variations."""
+    cv = CanonicalVariation(
+        _id="clinvar:13961",
+        complement=True,
+        variation=allele
+    )
+    assert cv.complement is True
+
+    assert cv.variation.type == "Allele"
+    assert cv.variation.location.type == "SequenceLocation"
+    assert cv.variation.location.sequence_id == \
+        "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl"
+
+    assert cv.variation.state.type.value == "LiteralSequenceExpression"
+    assert cv.variation.state.sequence == "C"
+
+    assert set(cv.schema()["properties"].keys()) == {"_id", "type",
+                                                     "complement", "variation"}
+
+    # check forbid extra
+    with pytest.raises(pydantic.error_wrappers.ValidationError):
+        cv = CanonicalVariation(
+            _id="clinvar:13961",
+            complement=False,
+            variation=allele,
+            variation_id="clinvar:13961"
+        )
+
+
+def test_categorical_variation(allele):
+    """Test creation and usage of categorical variations."""
+    cv = ComplexVariation(
+        _id="complex:variation",
+        operands=[
+            CanonicalVariation(
+                _id="clinvar:13961",
+                complement=False,
+                variation=allele
+            ),
+            CanonicalVariation(
+                _id="clinvar:375941",
+                complement=False,
+                variation=Allele(
+                    location=SequenceLocation(
+                        sequence_id="ga4gh:SQ.F-LrLMe1SRpfUZHkQmvkVKFEGaoDeHul",  # noqa: E501
+                        interval=SequenceInterval(
+                            start=Number(value=140753336),
+                            end=Number(value=140753337)
+                        )
+                    ),
+                    state=LiteralSequenceExpression(
+                        sequence=Sequence(__root__="T")
+                    )
+                )
+            )
+        ],
+        operator=ComplexVariationOperator.AND,
+        complement=False
+    )
+
+    assert cv.id == "complex:variation"
+    assert cv.complement is False
+    assert cv.operator == "AND"
+
+    assert len(cv.operands) == 2
+
+    op_0: CanonicalVariation = cv.operands[0]
+    assert op_0.id == "clinvar:13961"
+    assert op_0.complement is False
+    assert op_0.variation is not None
+    assert op_0.variation.type == "Allele"
+    assert op_0.variation.location.type == "SequenceLocation"
+    assert op_0.variation.location.sequence_id == \
+        "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl"
+    assert op_0.variation.location.interval.start.value == 44908821
+    assert op_0.variation.location.interval.end.value == 44908822
+    assert op_0.variation.state.sequence == "C"
+
+    op_1: CanonicalVariation = cv.operands[1]
+    assert op_1.id == "clinvar:375941"
+    assert op_1.complement is False
+    assert op_1.variation is not None
+    assert op_1.variation.type == "Allele"
+    assert op_1.variation.location.type == "SequenceLocation"
+    assert op_1.variation.location.sequence_id == \
+        "ga4gh:SQ.F-LrLMe1SRpfUZHkQmvkVKFEGaoDeHul"
+    assert op_1.variation.location.interval.start.value == 140753336
+    assert op_1.variation.location.interval.end.value == 140753337
+    assert op_1.variation.state.sequence == "T"
+
+    with pytest.raises(pydantic.ValidationError):
+        ComplexVariation(
+            _id="complex:variation",
+            operands=[
+                CanonicalVariation(
+                    _id="clinvar:13961",
+                    complement=False,
+                    variation=allele
+                )
+            ],
+            operator=ComplexVariationOperator.OR,
+            complement=False
+        )

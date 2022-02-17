@@ -2,12 +2,14 @@
 from __future__ import annotations
 from enum import Enum
 from typing import List, Optional, Union, Any, Literal
+
 from pydantic import BaseModel, Extra, StrictInt, StrictStr, \
-    root_validator, validator
+    root_validator, validator, Field
+
+from ga4gh.vrsatile.pydantic import return_value, BaseModelForbidExtra
 from ga4gh.vrsatile.pydantic.vrs_models import CURIE, Allele, Haplotype, \
-    CopyNumber, Text, VariationSet, SequenceLocation, ChromosomeLocation,\
+    CopyNumber, Text, VariationSet, SequenceLocation, ChromosomeLocation, \
     Sequence, Gene
-from ga4gh.vrsatile.pydantic import return_value
 
 
 class VODClassName(str, Enum):
@@ -34,34 +36,24 @@ class MoleculeContext(str, Enum):
     PROTEIN = "protein"
 
 
-class Extension(BaseModel):
+class Extension(BaseModelForbidExtra):
     """The Extension class provides VODs with a means to extend descriptions
     with other attributes unique to a content provider. These extensions are
     not expected to be natively understood under VRSATILE, but may be used
     for pre-negotiated exchange of message attributes when needed.
     """
 
-    class Config:
-        """Class configs."""
-
-        extra = Extra.forbid
-
     type: Literal[VRSATILETypes.EXTENSION] = VRSATILETypes.EXTENSION
     name: StrictStr
     value: Any
 
 
-class Expression(BaseModel):
+class Expression(BaseModelForbidExtra):
     """The Expression class is designed to enable descriptions based on a
     specified nomenclature or syntax for representing an object. Common
     examples of expressions for the description of molecular variation include
     the HGVS and ISCN nomenclatures.
     """
-
-    class Config:
-        """Class configs."""
-
-        extra = Extra.forbid
 
     type: Literal[VRSATILETypes.EXPRESSION] = VRSATILETypes.EXPRESSION
     syntax: CURIE
@@ -93,13 +85,8 @@ class ValueObjectDescriptor(BaseModel):
     _get_xrefs_val = validator('xrefs', allow_reuse=True)(return_value)
 
 
-class SequenceDescriptor(ValueObjectDescriptor):
+class SequenceDescriptor(BaseModelForbidExtra, ValueObjectDescriptor):
     """This descriptor is intended to reference VRS Sequence value objects."""
-
-    class Config:
-        """Class configs."""
-
-        extra = Extra.forbid
 
     type: Literal[VODClassName.SEQUENCE_DESCRIPTOR] = \
         VODClassName.SEQUENCE_DESCRIPTOR
@@ -122,13 +109,8 @@ class SequenceDescriptor(ValueObjectDescriptor):
         validator('residue_type', allow_reuse=True)(return_value)
 
 
-class LocationDescriptor(ValueObjectDescriptor):
+class LocationDescriptor(BaseModelForbidExtra, ValueObjectDescriptor):
     """This descriptor is intended to reference VRS Location value objects."""
-
-    class Config:
-        """Class configs."""
-
-        extra = Extra.forbid
 
     type: Literal[VODClassName.LOCATION_DESCRIPTOR] = \
         VODClassName.LOCATION_DESCRIPTOR
@@ -147,13 +129,8 @@ class LocationDescriptor(ValueObjectDescriptor):
         validator('location_id', allow_reuse=True)(return_value)
 
 
-class GeneDescriptor(ValueObjectDescriptor):
+class GeneDescriptor(BaseModelForbidExtra, ValueObjectDescriptor):
     """This descriptor is intended to reference VRS Gene value objects."""
-
-    class Config:
-        """Class configs."""
-
-        extra = Extra.forbid
 
     type: Literal[VODClassName.GENE_DESCRIPTOR] = VODClassName.GENE_DESCRIPTOR
     gene_id: Optional[CURIE]
@@ -170,15 +147,10 @@ class GeneDescriptor(ValueObjectDescriptor):
     _get_gene_id_val = validator('gene_id', allow_reuse=True)(return_value)
 
 
-class VCFRecord(BaseModel):
+class VCFRecord(BaseModelForbidExtra):
     """This data class is used when it is desirable to pass data as expected
     from a VCF record.
     """
-
-    class Config:
-        """Class configs."""
-
-        extra = Extra.forbid
 
     genome_assembly: StrictStr
     chrom: StrictStr
@@ -191,15 +163,10 @@ class VCFRecord(BaseModel):
     info: Optional[StrictStr]
 
 
-class VariationDescriptor(ValueObjectDescriptor):
+class VariationDescriptor(BaseModelForbidExtra, ValueObjectDescriptor):
     """This descriptor is intended as an class for describing VRS Variation
     value objects.
     """
-
-    class Config:
-        """Class configs."""
-
-        extra = Extra.forbid
 
     type: Literal[VODClassName.VARIATION_DESCRIPTOR] = \
         VODClassName.VARIATION_DESCRIPTOR
@@ -222,5 +189,66 @@ class VariationDescriptor(ValueObjectDescriptor):
         validator('gene_context', allow_reuse=True)(return_value)
     _get_vrs_allele_ref_seq_val = \
         validator('vrs_ref_allele_seq', allow_reuse=True)(return_value)
-    _get_allelic_statee_val = \
+    _get_allelic_state_val = \
         validator('allelic_state', allow_reuse=True)(return_value)
+
+
+class CategoricalVariationType(str, Enum):
+    """Possible types for Categorical Variations."""
+
+    CANONICAL_VARIATION = "CanonicalVariation"
+    COMPLEX_VARIATION = "ComplexVariation"
+
+
+class CategoricalVariation(BaseModel):
+    """A representation of a categorically-defined `functional domain
+    <https://en.wikipedia.org/wiki/Domain_of_a_function>`_ for variation, in
+    which individual variation instances may be members.
+    """
+
+    id: Optional[CURIE] = Field(..., alias="_id")
+    type: CategoricalVariationType
+    complement: bool
+
+    _get_id_val = validator("id", allow_reuse=True)(return_value)
+
+    class Config(BaseModelForbidExtra.Config):
+        """Class configs."""
+
+        allow_population_by_field_name = True
+
+
+class CanonicalVariation(CategoricalVariation):
+    """A categorical variation domain characterized by a representative
+    Variation context to which members lift-over, project, translate, or
+    otherwise directly align.
+    """
+
+    type: Literal[CategoricalVariationType.CANONICAL_VARIATION] = \
+        CategoricalVariationType.CANONICAL_VARIATION
+    variation: Optional[Union[Allele, Haplotype, CopyNumber,
+                              Text, VariationSet]]
+
+
+class ComplexVariationOperator(str, Enum):
+    """Possible values for the Complex Variation's `operator` field."""
+
+    AND = "AND"
+    OR = "OR"
+
+
+class ComplexVariation(CategoricalVariation):
+    """A categorical variation domain jointly characterized by two or more
+    other categorical variation domains.
+    """
+
+    type: Literal[CategoricalVariationType.COMPLEX_VARIATION] = \
+        CategoricalVariationType.COMPLEX_VARIATION
+    operands: List[CategoricalVariation]
+    operator: ComplexVariationOperator
+
+    @root_validator(pre=True)
+    def check_operands_length(cls, values):
+        """Check that `operands` contains >=2 objects"""
+        assert len(values.get("operands")) >= 2
+        return values
