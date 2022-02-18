@@ -278,6 +278,12 @@ class VariationMember(BaseModel):
     _get_variation_id_val = \
         validator("variation_id", allow_reuse=True)(return_value)
 
+    @root_validator(pre=True)
+    def check_expressions_length(cls, values):
+        """Check that `expressions` contains >=1 objects"""
+        assert len(values.get("expressions")) >= 1
+        return values
+
 
 class CategoricalVariationDescriptor(VariationDescriptor):
     """This descriptor class is used for describing Categorical Variation
@@ -294,9 +300,3 @@ class CategoricalVariationDescriptor(VariationDescriptor):
 
     _get_categorical_variation_id_val = \
         validator("categorical_variation_id", allow_reuse=True)(return_value)
-
-    @root_validator(pre=True)
-    def check_members_length(cls, values):
-        """Check that `members` contains >=1 objects"""
-        assert len(values.get("members", [])) >= 1
-        return values

@@ -8,11 +8,33 @@ from ga4gh.vrsatile.pydantic.vrsatile_models import  \
     MoleculeContext, Extension, Expression, ValueObjectDescriptor, \
     SequenceDescriptor, LocationDescriptor, GeneDescriptor, \
     VariationDescriptor, VCFRecord, CanonicalVariation, ComplexVariation, \
-    ComplexVariationOperator, CategoricalVariationDescriptor
+    ComplexVariationOperator, CategoricalVariationDescriptor, VariationMember
 
 
 @pytest.fixture(scope="module")
-def simple_repeating_del():
+def variation_member():
+    """Provide example of an individual VariationMember value."""
+    return {
+        "type": "VariationMember",
+        "expressions": [
+            {
+                "type": "Expression",
+                "syntax": "hgvs.g",
+                "syntax_version": "1.5",
+                "value": "NC_000013.10:g.20763488del",
+            },
+            {
+                "type": "Expression",
+                "syntax": "hgvs.c",
+                "value": "LRG_1350t1:c.235del"
+            }
+        ],
+        "variation_id": "ga4gh:VA.KGopzor-bEw8Ot5sAQQ5o5SVx4o7TuLN"
+    }
+
+
+@pytest.fixture(scope="module")
+def simple_repeating_del(variation_member):
     """Provide example of a complete Categorical Variation Descriptor."""
     return {
         "id": "clinvar:17014",
@@ -47,24 +69,7 @@ def simple_repeating_del():
                 }
             }
         },
-        "members": [
-            {
-                "type": "VariationMember",
-                "expressions": [
-                    {
-                        "type": "Expression",
-                        "syntax": "hgvs.g",
-                        "value": "NC_000013.10:g.20763488del",
-                    },
-                    {
-                        "type": "Expression",
-                        "syntax": "hgvs.c",
-                        "value": "LRG_1350t1:c.235del"
-                    }
-                ],
-                "variation_id": "ga4gh:VA.KGopzor-bEw8Ot5sAQQ5o5SVx4o7TuLN"
-            }
-        ]
+        "members": [variation_member]
     }
 
 
@@ -443,6 +448,26 @@ def test_categorical_variation(allele):
             operator=ComplexVariationOperator.OR,
             complement=False
         )
+
+
+def test_variation_member(variation_member):
+    """Test variation member descriptor"""
+    vm = VariationMember(**variation_member)
+    assert vm.type == "VariationMember"
+    assert vm.variation_id == "ga4gh:VA.KGopzor-bEw8Ot5sAQQ5o5SVx4o7TuLN"
+    expr_1 = next(i for i in vm.expressions if i.syntax == "hgvs.g")
+    assert expr_1.type == "Expression"
+    assert expr_1.value == "NC_000013.10:g.20763488del"
+    expr_2 = next(i for i in vm.expressions if i.syntax == "hgvs.c")
+    assert expr_2.type == "Expression"
+    assert expr_2.value == "LRG_1350t1:c.235del"
+
+    with pytest.raises(pydantic.ValidationError):
+        VariationMember(**{
+            "type": "VariationMember",
+            "expressions": [],
+            "variation_id": "ga4gh:VA.KGopzor-bEw8Ot5sAQQ5o5SVx4o7TuLN"
+        })
 
 
 def test_categorical_variation_descriptor(simple_repeating_del):
