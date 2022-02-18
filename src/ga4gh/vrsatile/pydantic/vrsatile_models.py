@@ -50,7 +50,7 @@ class Extension(BaseModelForbidExtra):
 
 
 class ExpressionSyntax(str, Enum):
-    """Possible values for the Expression `syntax property.`"""
+    """Possible values for the Expression `syntax` property."""
 
     HGVS_C = "hgvs.c"
     HGVS_P = "hgvs.p"
@@ -71,7 +71,7 @@ class Expression(BaseModelForbidExtra):
     type: Literal[VRSATILETypes.EXPRESSION] = VRSATILETypes.EXPRESSION
     syntax: ExpressionSyntax
     value: StrictStr
-    version: Optional[StrictStr]
+    syntax_version: Optional[StrictStr]
 
 
 class ValueObjectDescriptor(BaseModel):
@@ -271,11 +271,12 @@ class VariationMember(BaseModel):
     and optionally an associated VRS ID.
     """
 
+    type: Literal["VariationMember"] = "VariationMember"
     expressions: List[Expression]
     variation_id: Optional[CURIE]
 
     _get_variation_id_val = \
-        validator('variation_id', allow_reuse=True)(return_value)
+        validator("variation_id", allow_reuse=True)(return_value)
 
 
 class CategoricalVariationDescriptor(VariationDescriptor):
@@ -292,7 +293,7 @@ class CategoricalVariationDescriptor(VariationDescriptor):
     members: Optional[List[VariationMember]]
 
     _get_categorical_variation_id_val = \
-        validator('categorical_variation_id', allow_reuse=True)(return_value)
+        validator("categorical_variation_id", allow_reuse=True)(return_value)
 
     @root_validator(pre=True)
     def check_members_length(cls, values):

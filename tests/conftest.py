@@ -96,7 +96,7 @@ def extension():
 def expression():
     """Create test fixture for Expression."""
     return Expression(syntax="hgvs.p", value="NP_005219.2:p.Leu858Arg",
-                      version="1.0")
+                      syntax_version="1.0")
 
 
 @pytest.fixture(scope="session")

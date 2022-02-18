@@ -49,6 +49,7 @@ def simple_repeating_del():
         },
         "members": [
             {
+                "type": "VariationMember",
                 "expressions": [
                     {
                         "type": "Expression",
@@ -103,7 +104,7 @@ def test_expression(expression):
     """Test that Expression model works correctly."""
     assert expression.syntax == "hgvs.p"
     assert expression.value == "NP_005219.2:p.Leu858Arg"
-    assert expression.version == "1.0"
+    assert expression.syntax_version == "1.0"
     assert expression.type == "Expression"
 
     e = Expression(syntax="hgvs.g", value="NC_000007.13:g.55259515T>G",
@@ -120,7 +121,7 @@ def test_expression(expression):
         {"val": expression.value},
         {"syntax": expression.syntax, "value": 1},
         {"syntax": expression.syntax, "value": expression.value,
-         "version": 1.0}
+         "syntax_version": 1.0}
     ]
 
     for invalid_param in invalid_params:
@@ -316,7 +317,7 @@ def test_variation_descriptor(allele, gene_descriptor, vcf_record, expression,
     assert len(vd.expressions) == 1
     assert vd.expressions[0].syntax == "hgvs.p"
     assert vd.expressions[0].value == "NP_005219.2:p.Leu858Arg"
-    assert vd.expressions[0].version == "1.0"
+    assert vd.expressions[0].syntax_version == "1.0"
     assert vd.structural_type == "SO:0001537"
     assert vd.vrs_ref_allele_seq == "C"
     assert vd.allelic_state == "GENO:00000875"
