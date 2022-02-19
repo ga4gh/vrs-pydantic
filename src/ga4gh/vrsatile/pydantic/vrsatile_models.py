@@ -60,6 +60,7 @@ class ExpressionSyntax(str, Enum):
     HGVS_R = "hgvs.r"
     ISCN = "iscn"
     GNOMAD = "gnomad"
+    SPDI = "spdi"
 
 
 class Expression(BaseModelForbidExtra):
