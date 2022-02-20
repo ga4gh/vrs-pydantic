@@ -19,6 +19,7 @@ class VODClassName(str, Enum):
     LOCATION_DESCRIPTOR = "LocationDescriptor"
     SEQUENCE_DESCRIPTOR = "SequenceDescriptor"
     GENE_DESCRIPTOR = "GeneDescriptor"
+    CATEGORICAL_VARIATION_DESCRIPTOR = "CategoricalVariationDescriptor"
 
 
 class VRSATILETypes(str, Enum):
@@ -48,19 +49,30 @@ class Extension(BaseModelForbidExtra):
     value: Any
 
 
+class ExpressionSyntax(str, Enum):
+    """Possible values for the Expression `syntax` property."""
+
+    HGVS_C = "hgvs.c"
+    HGVS_P = "hgvs.p"
+    HGVS_G = "hgvs.g"
+    HGVS_M = "hgvs.m"
+    HGVS_N = "hgvs.n"
+    HGVS_R = "hgvs.r"
+    ISCN = "iscn"
+    GNOMAD = "gnomad"
+    SPDI = "spdi"
+
+
 class Expression(BaseModelForbidExtra):
-    """The Expression class is designed to enable descriptions based on a
-    specified nomenclature or syntax for representing an object. Common
-    examples of expressions for the description of molecular variation include
-    the HGVS and ISCN nomenclatures.
+    """Representation of a variation by a specified nomenclature or syntax for
+    a Variation object. Common examples of expressions for the description of
+    molecular variation include the HGVS and ISCN nomenclatures.
     """
 
     type: Literal[VRSATILETypes.EXPRESSION] = VRSATILETypes.EXPRESSION
-    syntax: CURIE
+    syntax: ExpressionSyntax
     value: StrictStr
-    version: Optional[StrictStr]
-
-    _get_syntax_val = validator('syntax', allow_reuse=True)(return_value)
+    syntax_version: Optional[StrictStr]
 
 
 class ValueObjectDescriptor(BaseModel):
@@ -252,3 +264,40 @@ class ComplexVariation(CategoricalVariation):
         """Check that `operands` contains >=2 objects"""
         assert len(values.get("operands")) >= 2
         return values
+
+
+class VariationMember(BaseModel):
+    """A compact class for representing a variation context that is a member of
+    a Categorical Variation. It supports one or more Expressions of a Variation
+    and optionally an associated VRS ID.
+    """
+
+    type: Literal["VariationMember"] = "VariationMember"
+    expressions: List[Expression]
+    variation_id: Optional[CURIE]
+
+    _get_variation_id_val = \
+        validator("variation_id", allow_reuse=True)(return_value)
+
+    @root_validator(pre=True)
+    def check_expressions_length(cls, values):
+        """Check that `expressions` contains >=1 objects"""
+        assert len(values.get("expressions")) >= 1
+        return values
+
+
+class CategoricalVariationDescriptor(VariationDescriptor):
+    """This descriptor class is used for describing Categorical Variation
+    value objects.
+    """
+
+    type: Literal[VODClassName.CATEGORICAL_VARIATION_DESCRIPTOR] = \
+        VODClassName.CATEGORICAL_VARIATION_DESCRIPTOR
+    version: Optional[StrictStr]
+    categorical_variation_id: Optional[CURIE]
+    categorical_variation: Optional[Union[CanonicalVariation,
+                                          ComplexVariation]]
+    members: Optional[List[VariationMember]]
+
+    _get_categorical_variation_id_val = \
+        validator("categorical_variation_id", allow_reuse=True)(return_value)
