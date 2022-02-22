@@ -1,14 +1,30 @@
 """Initialize GA4GH VRSATILE Pydantic."""
-from pydantic import BaseModel, Extra
+import logging
+from abc import ABC
+
+from pydantic import BaseModel, Extra, root_validator
 
 
-class BaseModelForbidExtra(BaseModel):
+logger = logging.getLogger("FUSOR")
+
+
+class BaseModelForbidExtra(BaseModel, ABC):
     """Base Pydantic model class with extra values forbidden."""
 
     class Config:
         """Class configs."""
 
         extra = Extra.forbid
+
+
+class BaseModelDeprecated(BaseModel, ABC):
+    """Base Pydantic model class to use for deprecated classes."""
+
+    @root_validator(pre=True)
+    def log_deprecated_warning(cls, values):
+        """Log warning that object class is deprecated."""
+        logger.warning(f"Using deprecated object: {cls.__name__}")
+        return values
 
 
 def return_value(cls, v):
