@@ -10,28 +10,6 @@ from ga4gh.vrsatile.pydantic.vrs_models import Number, Comparator, \
     SimpleInterval, SequenceState
 
 
-@pytest.fixture(scope="module")
-def deprecated_allele():
-    """Allele object that uses deprecated terms."""
-    return {
-        "_id": "ga4gh:VA.HaPTmn-rrjRoZnIVw1I4AZPa6YHa2ojh",
-        "type": "Allele",
-        "location": {
-            "_id": "ga4gh:VSL.mHP-jIvDKOG6r-mhkhgNNrtHXa2clUSK",
-            "type": "SequenceLocation",
-            "sequence_id": "ga4gh:SQ.F-LrLMe1SRpfUZHkQmvkVKFEGaoDeHul",
-            "interval": {
-                "start": 140753335,
-                "end": 140753336
-            }
-        },
-        "state": {
-            "type": "SequenceState",
-            "sequence": "T"
-        }
-    }
-
-
 def test_number(number):
     """Test that Number model works correctly."""
     assert number.value == 3
@@ -491,11 +469,29 @@ def test_deprecated_objects(caplog, deprecated_allele):
     assert seqstate.sequence == "T"
     assert "Using deprecated object: SequenceState" in caplog.text
 
+    invalid_params = [
+        {"sequence": "t"},
+        {"sequence": "T", "type": "Sequence"},
+        {"sequence": "hello,world"}
+    ]
+    for invalid_param in invalid_params:
+        with pytest.raises(pydantic.error_wrappers.ValidationError):
+            SequenceState(**invalid_param)
+
     simpleint = SimpleInterval(**deprecated_allele["location"]["interval"])
     assert simpleint.type == "SimpleInterval"
     assert simpleint.start == 140753335
     assert simpleint.end == 140753336
     assert "Using deprecated object: SimpleInterval" in caplog.text
+
+    invalid_params = [
+        {"start": 2.0, "end": 2},
+        {"start": 2, "end": 2, "type": "CytobandInterval"},
+        {"start": 2, "end": '2'}
+    ]
+    for invalid_param in invalid_params:
+        with pytest.raises(pydantic.error_wrappers.ValidationError):
+            SimpleInterval(**invalid_param)
 
     allele = Allele(**deprecated_allele)
     assert allele.state.type == "SequenceState"
