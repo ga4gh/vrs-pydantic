@@ -23,7 +23,11 @@ class BaseModelDeprecated(BaseModel, ABC):
     @root_validator(pre=True)
     def log_deprecated_warning(cls, values):
         """Log warning that object class is deprecated."""
-        logger.warning(f"Using deprecated object: {cls.__name__}")
+        if hasattr(cls, "_replace_with"):
+            logger.warning(f"{cls.__name__} is deprecated. "
+                           f"Use {cls._replace_with} instead.")
+        else:
+            logger.warning(f"{cls.__name__} is deprecated.")
         return values
 
 

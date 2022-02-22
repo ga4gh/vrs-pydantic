@@ -464,10 +464,12 @@ def test_systemic_variation(gene, number):
 
 def test_deprecated_objects(caplog, deprecated_allele):
     """Test that deprecated objects work and log appropriately."""
+    seqstate_deprecated_msg = "SequenceState is deprecated. Use LiteralSequenceExpression instead."  # noqa: E501
+    simpleint_deprecated_msg = "SimpleInterval is deprecated. Use SequenceInterval instead."  # noqa: E501
     seqstate = SequenceState(**deprecated_allele["state"])
     assert seqstate.type == "SequenceState"
     assert seqstate.sequence == "T"
-    assert "Using deprecated object: SequenceState" in caplog.text
+    assert seqstate_deprecated_msg in caplog.text
 
     invalid_params = [
         {"sequence": "t"},
@@ -482,7 +484,7 @@ def test_deprecated_objects(caplog, deprecated_allele):
     assert simpleint.type == "SimpleInterval"
     assert simpleint.start == 140753335
     assert simpleint.end == 140753336
-    assert "Using deprecated object: SimpleInterval" in caplog.text
+    assert simpleint_deprecated_msg in caplog.text
 
     invalid_params = [
         {"start": 2.0, "end": 2},
@@ -496,11 +498,11 @@ def test_deprecated_objects(caplog, deprecated_allele):
     allele = Allele(**deprecated_allele)
     assert allele.state.type == "SequenceState"
     assert allele.state.sequence == "T"
-    assert "Using deprecated object: SequenceState" in caplog.text
+    assert seqstate_deprecated_msg in caplog.text
     assert allele.location.interval.type == "SimpleInterval"
     assert allele.location.interval.start == 140753335
     assert allele.location.interval.end == 140753336
-    assert "Using deprecated object: SimpleInterval" in caplog.text
+    assert simpleint_deprecated_msg in caplog.text
 
     # should default to non-deprecated option when possible
     allele = Allele(state={"sequence": "T"},

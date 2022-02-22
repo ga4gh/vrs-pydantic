@@ -161,6 +161,8 @@ class SimpleInterval(BaseModelForbidExtra, BaseModelDeprecated):
     start: StrictInt
     end: StrictInt
 
+    _replace_with = "SequenceInterval"
+
 
 class CytobandInterval(BaseModelForbidExtra):
     """A contiguous region specified by chromosomal bands features."""
@@ -192,6 +194,8 @@ class SequenceState(BaseModelForbidExtra, BaseModelDeprecated):
 
     type: Literal[VRSTypes.SEQUENCE_STATE] = VRSTypes.SEQUENCE_STATE
     sequence: Sequence
+
+    _replace_with = "LiteralSequenceExpression"
 
     _get_sequence_val = validator("sequence", allow_reuse=True)(return_value)
 
