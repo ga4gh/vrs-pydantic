@@ -5,7 +5,7 @@ from abc import ABC
 from pydantic import BaseModel, Extra, root_validator
 
 
-logger = logging.getLogger("FUSOR")
+logger = logging.getLogger("vrsatile-pydantic")
 
 
 class BaseModelForbidExtra(BaseModel, ABC):
