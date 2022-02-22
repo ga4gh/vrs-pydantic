@@ -6,7 +6,8 @@ from typing import List, Optional, Union, Literal
 from pydantic import BaseModel, Extra, Field, constr, StrictInt, StrictStr, \
     StrictBool, validator
 
-from ga4gh.vrsatile.pydantic import return_value, BaseModelForbidExtra
+from ga4gh.vrsatile.pydantic import return_value, BaseModelForbidExtra, \
+    BaseModelDeprecated
 
 
 class VRSTypes(str, Enum):
@@ -28,6 +29,8 @@ class VRSTypes(str, Enum):
     HAPLOTYPE = "Haplotype"
     COPY_NUMBER = "CopyNumber"
     VARIATION_SET = "VariationSet"
+    SEQUENCE_STATE = "SequenceState"
+    SIMPLE_INTERVAL = "SimpleInterval"
 
 
 class Number(BaseModel):
@@ -148,6 +151,19 @@ class SequenceInterval(BaseModelForbidExtra):
     end: Union[Number, IndefiniteRange, DefiniteRange]
 
 
+class SimpleInterval(BaseModelForbidExtra, BaseModelDeprecated):
+    """DEPRECATED: A SimpleInterval represents a span of sequence. Positions
+    are always represented by contiguous spans using interbase coordinates.
+    This class is deprecated. Use SequenceInterval instead.
+    """
+
+    type: Literal[VRSTypes.SIMPLE_INTERVAL] = VRSTypes.SIMPLE_INTERVAL
+    start: StrictInt
+    end: StrictInt
+
+    _replace_with = "SequenceInterval"
+
+
 class CytobandInterval(BaseModelForbidExtra):
     """A contiguous region specified by chromosomal bands features."""
 
@@ -167,6 +183,21 @@ class LiteralSequenceExpression(BaseModelForbidExtra):
     sequence: Sequence
 
     _get_sequence_val = validator('sequence', allow_reuse=True)(return_value)
+
+
+class SequenceState(BaseModelForbidExtra, BaseModelDeprecated):
+    """DEPRECATED. A Sequence as a State. This is the State class to use for
+    representing "ref-alt" style variation, including SNVs, MNVs, del, ins, and
+    delins.
+    This class is deprecated. Use LiteralSequenceExpression instead.
+    """
+
+    type: Literal[VRSTypes.SEQUENCE_STATE] = VRSTypes.SEQUENCE_STATE
+    sequence: Sequence
+
+    _replace_with = "LiteralSequenceExpression"
+
+    _get_sequence_val = validator("sequence", allow_reuse=True)(return_value)
 
 
 class Gene(BaseModelForbidExtra):
@@ -212,7 +243,7 @@ class SequenceLocation(BaseModel):
     id: Optional[CURIE] = Field(alias='_id')
     type: Literal[VRSTypes.SEQUENCE_LOCATION] = VRSTypes.SEQUENCE_LOCATION
     sequence_id: CURIE
-    interval: SequenceInterval
+    interval: Union[SequenceInterval, SimpleInterval]
 
     _get_id_val = validator('id', allow_reuse=True)(return_value)
     _get_sequence_id_val = \
@@ -289,7 +320,7 @@ class Allele(BaseModel):
     id: Optional[CURIE] = Field(alias='_id')
     type: Literal[VRSTypes.ALLELE] = VRSTypes.ALLELE
     location: Union[CURIE, Location]
-    state: SequenceExpression
+    state: Union[SequenceExpression, SequenceState]
 
     _get_id_val = validator('id', allow_reuse=True)(return_value)
     _get_loc_val = validator('location', allow_reuse=True)(return_value)

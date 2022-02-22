@@ -6,7 +6,8 @@ from ga4gh.vrsatile.pydantic.vrs_models import Number, Comparator, \
     SequenceInterval, CytobandInterval, DerivedSequenceExpression, \
     LiteralSequenceExpression, RepeatedSequenceExpression, Gene, \
     SequenceLocation, VariationSet, Haplotype, \
-    CopyNumber, Allele, ChromosomeLocation, Feature, SystemicVariation
+    CopyNumber, Allele, ChromosomeLocation, Feature, SystemicVariation, \
+    SimpleInterval, SequenceState
 
 
 def test_number(number):
@@ -252,15 +253,6 @@ def test_sequence_location(sequence_location, sequence_interval):
             "sequence_id": "NC_000007.13",
             "interval": sequence_interval,
             "type": "ChromosomeLocation"
-        },
-        {
-            "id": "sequence:id",
-            "sequence_id": "test:1",
-            "interval": {
-                "type": "SimpleInterval",
-                "start": 1,
-                "end": 2
-            }
         }
     ]
 
@@ -468,3 +460,51 @@ def test_systemic_variation(gene, number):
 
     c = CopyNumber(subject=gene, copies=number)
     assert SystemicVariation(__root__=c)
+
+
+def test_deprecated_objects(caplog, deprecated_allele):
+    """Test that deprecated objects work and log appropriately."""
+    seqstate_deprecated_msg = "SequenceState is deprecated. Use LiteralSequenceExpression instead."  # noqa: E501
+    simpleint_deprecated_msg = "SimpleInterval is deprecated. Use SequenceInterval instead."  # noqa: E501
+    seqstate = SequenceState(**deprecated_allele["state"])
+    assert seqstate.type == "SequenceState"
+    assert seqstate.sequence == "T"
+    assert seqstate_deprecated_msg in caplog.text
+
+    invalid_params = [
+        {"sequence": "t"},
+        {"sequence": "T", "type": "Sequence"},
+        {"sequence": "hello,world"}
+    ]
+    for invalid_param in invalid_params:
+        with pytest.raises(pydantic.error_wrappers.ValidationError):
+            SequenceState(**invalid_param)
+
+    simpleint = SimpleInterval(**deprecated_allele["location"]["interval"])
+    assert simpleint.type == "SimpleInterval"
+    assert simpleint.start == 140753335
+    assert simpleint.end == 140753336
+    assert simpleint_deprecated_msg in caplog.text
+
+    invalid_params = [
+        {"start": 2.0, "end": 2},
+        {"start": 2, "end": 2, "type": "CytobandInterval"},
+        {"start": 2, "end": '2'}
+    ]
+    for invalid_param in invalid_params:
+        with pytest.raises(pydantic.error_wrappers.ValidationError):
+            SimpleInterval(**invalid_param)
+
+    allele = Allele(**deprecated_allele)
+    assert allele.state.type == "SequenceState"
+    assert allele.state.sequence == "T"
+    assert seqstate_deprecated_msg in caplog.text
+    assert allele.location.interval.type == "SimpleInterval"
+    assert allele.location.interval.start == 140753335
+    assert allele.location.interval.end == 140753336
+    assert simpleint_deprecated_msg in caplog.text
+
+    # should default to non-deprecated option when possible
+    allele = Allele(state={"sequence": "T"},
+                    location=deprecated_allele["location"])
+    assert allele.state.type == "LiteralSequenceExpression"
