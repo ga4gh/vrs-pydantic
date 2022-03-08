@@ -8,8 +8,8 @@ from pydantic import BaseModel, Extra, StrictInt, StrictStr, \
 
 from ga4gh.vrsatile.pydantic import return_value, BaseModelForbidExtra
 from ga4gh.vrsatile.pydantic.vrs_models import CURIE, Allele, Haplotype, \
-    CopyNumber, Text, VariationSet, SequenceLocation, ChromosomeLocation, \
-    Sequence, Gene
+    AbsoluteCopyNumber, RelativeCopyNumber, Text, VariationSet, SequenceLocation, \
+    ChromosomeLocation, Sequence, Gene
 
 
 class VODClassName(str, Enum):
@@ -183,8 +183,8 @@ class VariationDescriptor(BaseModelForbidExtra, ValueObjectDescriptor):
     type: Literal[VODClassName.VARIATION_DESCRIPTOR] = \
         VODClassName.VARIATION_DESCRIPTOR
     variation_id: Optional[CURIE]
-    variation: Optional[Union[Allele, Haplotype, CopyNumber,
-                              Text, VariationSet]]
+    variation: Optional[Union[Allele, Haplotype, AbsoluteCopyNumber,
+                              RelativeCopyNumber, Text, VariationSet]]
     molecule_context: Optional[MoleculeContext]
     structural_type: Optional[CURIE]
     expressions: Optional[List[Expression]]
@@ -238,8 +238,8 @@ class CanonicalVariation(CategoricalVariation):
 
     type: Literal[CategoricalVariationType.CANONICAL_VARIATION] = \
         CategoricalVariationType.CANONICAL_VARIATION
-    variation: Optional[Union[Allele, Haplotype, CopyNumber,
-                              Text, VariationSet]]
+    variation: Optional[Union[Allele, Haplotype, AbsoluteCopyNumber,
+                              RelativeCopyNumber, Text, VariationSet]]
 
 
 class ComplexVariationOperator(str, Enum):
