@@ -80,6 +80,28 @@ def allele(sequence_location):
     )
 
 
+@pytest.fixture(scope="module")
+def deprecated_allele():
+    """Allele object that uses deprecated terms."""
+    return {
+        "_id": "ga4gh:VA.HaPTmn-rrjRoZnIVw1I4AZPa6YHa2ojh",
+        "type": "Allele",
+        "location": {
+            "_id": "ga4gh:VSL.mHP-jIvDKOG6r-mhkhgNNrtHXa2clUSK",
+            "type": "SequenceLocation",
+            "sequence_id": "ga4gh:SQ.F-LrLMe1SRpfUZHkQmvkVKFEGaoDeHul",
+            "interval": {
+                "start": 140753335,
+                "end": 140753336
+            }
+        },
+        "state": {
+            "type": "SequenceState",
+            "sequence": "T"
+        }
+    }
+
+
 @pytest.fixture(scope="session")
 def gene():
     """Create test fixture for Gene."""
@@ -95,8 +117,8 @@ def extension():
 @pytest.fixture(scope="session")
 def expression():
     """Create test fixture for Expression."""
-    return Expression(syntax="hgvs:protein", value="NP_005219.2:p.Leu858Arg",
-                      version="1.0")
+    return Expression(syntax="hgvs.p", value="NP_005219.2:p.Leu858Arg",
+                      syntax_version="1.0")
 
 
 @pytest.fixture(scope="session")

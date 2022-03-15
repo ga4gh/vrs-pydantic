@@ -6,7 +6,8 @@ from typing import List, Optional, Union, Literal
 from pydantic import BaseModel, Extra, Field, constr, StrictInt, StrictStr, \
     StrictBool, validator
 
-from ga4gh.vrsatile.pydantic import return_value, BaseModelForbidExtra
+from ga4gh.vrsatile.pydantic import return_value, BaseModelForbidExtra, \
+    BaseModelDeprecated
 
 
 class VRSTypes(str, Enum):
@@ -26,8 +27,11 @@ class VRSTypes(str, Enum):
     REPEATED_SEQUENCE_EXPRESSION = "RepeatedSequenceExpression"
     ALLELE = "Allele"
     HAPLOTYPE = "Haplotype"
-    COPY_NUMBER = "CopyNumber"
+    ABSOLUTE_COPY_NUMBER = "AbsoluteCopyNumber"
+    RELATIVE_COPY_NUMBER = "RelativeCopyNumber"
     VARIATION_SET = "VariationSet"
+    SEQUENCE_STATE = "SequenceState"
+    SIMPLE_INTERVAL = "SimpleInterval"
 
 
 class Number(BaseModel):
@@ -47,6 +51,16 @@ class Comparator(str, Enum):
 
     LT_OR_EQUAL = "<="
     GT_OR_EQUAL = ">="
+
+
+class RelativeCopyClass(str, Enum):
+    """The relative copy class"""
+
+    COMPLETE_LOSS = "complete loss"
+    PARTIAL_LOSS = "partial loss"
+    COPY_NEUTRAL = "copy neutral"
+    LOW_LEVEL_GAIN = "low-level gain"
+    HIGH_LEVEL_GAIN = "high-level gain"
 
 
 class IndefiniteRange(BaseModelForbidExtra):
@@ -148,6 +162,19 @@ class SequenceInterval(BaseModelForbidExtra):
     end: Union[Number, IndefiniteRange, DefiniteRange]
 
 
+class SimpleInterval(BaseModelForbidExtra, BaseModelDeprecated):
+    """DEPRECATED: A SimpleInterval represents a span of sequence. Positions
+    are always represented by contiguous spans using interbase coordinates.
+    This class is deprecated. Use SequenceInterval instead.
+    """
+
+    type: Literal[VRSTypes.SIMPLE_INTERVAL] = VRSTypes.SIMPLE_INTERVAL
+    start: StrictInt
+    end: StrictInt
+
+    _replace_with = "SequenceInterval"
+
+
 class CytobandInterval(BaseModelForbidExtra):
     """A contiguous region specified by chromosomal bands features."""
 
@@ -167,6 +194,21 @@ class LiteralSequenceExpression(BaseModelForbidExtra):
     sequence: Sequence
 
     _get_sequence_val = validator('sequence', allow_reuse=True)(return_value)
+
+
+class SequenceState(BaseModelForbidExtra, BaseModelDeprecated):
+    """DEPRECATED. A Sequence as a State. This is the State class to use for
+    representing "ref-alt" style variation, including SNVs, MNVs, del, ins, and
+    delins.
+    This class is deprecated. Use LiteralSequenceExpression instead.
+    """
+
+    type: Literal[VRSTypes.SEQUENCE_STATE] = VRSTypes.SEQUENCE_STATE
+    sequence: Sequence
+
+    _replace_with = "LiteralSequenceExpression"
+
+    _get_sequence_val = validator("sequence", allow_reuse=True)(return_value)
 
 
 class Gene(BaseModelForbidExtra):
@@ -212,7 +254,7 @@ class SequenceLocation(BaseModel):
     id: Optional[CURIE] = Field(alias='_id')
     type: Literal[VRSTypes.SEQUENCE_LOCATION] = VRSTypes.SEQUENCE_LOCATION
     sequence_id: CURIE
-    interval: SequenceInterval
+    interval: Union[SequenceInterval, SimpleInterval]
 
     _get_id_val = validator('id', allow_reuse=True)(return_value)
     _get_sequence_id_val = \
@@ -289,7 +331,7 @@ class Allele(BaseModel):
     id: Optional[CURIE] = Field(alias='_id')
     type: Literal[VRSTypes.ALLELE] = VRSTypes.ALLELE
     location: Union[CURIE, Location]
-    state: SequenceExpression
+    state: Union[SequenceExpression, SequenceState]
 
     _get_id_val = validator('id', allow_reuse=True)(return_value)
     _get_loc_val = validator('location', allow_reuse=True)(return_value)
@@ -317,9 +359,10 @@ class MolecularVariation(BaseModel):
     __root__: Union[Allele, Haplotype]
 
 
-class CopyNumber(BaseModel):
-    """The count of discrete copies of a Feature, Molecular Variation, or
-    other molecule within a genome.
+class AbsoluteCopyNumber(BaseModel):
+    """The absolute count of discrete copies of a MolecularVariation, Feature,
+    SequenceExpression, or a CURIE reference within a system
+    (e.g. genome, cell, etc.).
     """
 
     class Config(BaseModelForbidExtra.Config):
@@ -328,9 +371,29 @@ class CopyNumber(BaseModel):
         allow_population_by_field_name = True
 
     id: Optional[CURIE] = Field(alias='_id')
-    type: Literal[VRSTypes.COPY_NUMBER] = VRSTypes.COPY_NUMBER
+    type: Literal[VRSTypes.ABSOLUTE_COPY_NUMBER] = VRSTypes.ABSOLUTE_COPY_NUMBER
     subject: Union[MolecularVariation, Feature, SequenceExpression, CURIE]
     copies: Union[Number, IndefiniteRange, DefiniteRange]
+
+    _get_id_val = validator('id', allow_reuse=True)(return_value)
+    _get_subject_val = validator('subject', allow_reuse=True)(return_value)
+
+
+class RelativeCopyNumber(BaseModel):
+    """The relative copies of a MolecularVariation, Feature, SequenceExpression,
+    or a CURIE reference against an unspecified baseline in a system
+    (e.g. genome, cell, etc.).
+    """
+
+    class Config(BaseModelForbidExtra.Config):
+        """Class configs."""
+
+        allow_population_by_field_name = True
+
+    id: Optional[CURIE] = Field(alias='_id')
+    type: Literal[VRSTypes.RELATIVE_COPY_NUMBER] = VRSTypes.RELATIVE_COPY_NUMBER
+    subject: Union[MolecularVariation, Feature, SequenceExpression, CURIE]
+    relative_copy_class: RelativeCopyClass
 
     _get_id_val = validator('id', allow_reuse=True)(return_value)
     _get_subject_val = validator('subject', allow_reuse=True)(return_value)
@@ -341,16 +404,7 @@ class SystemicVariation(BaseModel):
     e.g. a genome, sample, or homologous chromosomes.
     """
 
-    __root__: CopyNumber
-
-    class Config:
-        """Configure Pydantic attributes."""
-
-        @staticmethod
-        def schema_extra(schema, model):
-            """Ensure JSON schema output matches original VRS model."""
-            del schema["$ref"]
-            schema["anyOf"] = [{"$ref": "#/components/schemas/CopyNumber"}]
+    __root__: Union[AbsoluteCopyNumber, RelativeCopyNumber]
 
 
 class Variation(BaseModel):

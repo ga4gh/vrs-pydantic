@@ -6,7 +6,8 @@ from ga4gh.vrsatile.pydantic.vrs_models import Number, Comparator, \
     SequenceInterval, CytobandInterval, DerivedSequenceExpression, \
     LiteralSequenceExpression, RepeatedSequenceExpression, Gene, \
     SequenceLocation, VariationSet, Haplotype, \
-    CopyNumber, Allele, ChromosomeLocation, Feature, SystemicVariation
+    AbsoluteCopyNumber, Allele, ChromosomeLocation, Feature, SystemicVariation, \
+    SimpleInterval, SequenceState, RelativeCopyNumber
 
 
 def test_number(number):
@@ -252,15 +253,6 @@ def test_sequence_location(sequence_location, sequence_interval):
             "sequence_id": "NC_000007.13",
             "interval": sequence_interval,
             "type": "ChromosomeLocation"
-        },
-        {
-            "id": "sequence:id",
-            "sequence_id": "test:1",
-            "interval": {
-                "type": "SimpleInterval",
-                "start": 1,
-                "end": 2
-            }
         }
     ]
 
@@ -393,20 +385,20 @@ def test_haplotype(allele):
             Haplotype(**invalid_param)
 
 
-def test_copy_number(number, definite_range, indefinite_range, gene,
-                     allele):
-    """Test that Copy Number model works correctly."""
-    c = CopyNumber(subject=gene, copies=number)
+def test_absolute_copy_number(number, definite_range, indefinite_range, gene, allele):
+    """Test that Absolute Copy Number model works correctly."""
+    c = AbsoluteCopyNumber(subject=gene, copies=number)
     assert c.subject.gene_id == "ncbigene:348"
     assert c.copies.value == 3
-    assert c.type == "CopyNumber"
+    assert c.type == "AbsoluteCopyNumber"
 
-    c = CopyNumber(subject=gene, copies=definite_range, type="CopyNumber")
+    c = AbsoluteCopyNumber(
+        subject=gene, copies=definite_range, type="AbsoluteCopyNumber")
     assert c.subject.gene_id == "ncbigene:348"
     assert c.copies.min == 22
     assert c.copies.max == 33
 
-    c = CopyNumber(subject=gene, copies=indefinite_range)
+    c = AbsoluteCopyNumber(subject=gene, copies=indefinite_range)
     assert c.subject.gene_id == "ncbigene:348"
     assert c.copies.value == 3
     assert c.copies.comparator == ">="
@@ -419,7 +411,41 @@ def test_copy_number(number, definite_range, indefinite_range, gene,
 
     for invalid_param in invalid_params:
         with pytest.raises(pydantic.error_wrappers.ValidationError):
-            CopyNumber(**invalid_param)
+            AbsoluteCopyNumber(**invalid_param)
+
+
+def test_relative_copy_number(number, definite_range, indefinite_range, gene, allele):
+    """Test that Relative Copy Number model works correctly."""
+    c = RelativeCopyNumber(subject=gene, relative_copy_class="complete loss")
+    assert c.subject.gene_id == "ncbigene:348"
+    assert c.relative_copy_class == "complete loss"
+    assert c.type == "RelativeCopyNumber"
+
+    c = RelativeCopyNumber(
+        subject=allele, relative_copy_class="partial loss", type="RelativeCopyNumber")
+    assert c.subject.type == "Allele"
+    assert c.subject.location.type == "SequenceLocation"
+    assert c.subject.location.sequence_id == \
+           "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl"
+    assert c.relative_copy_class == "partial loss"
+    assert c.type == "RelativeCopyNumber"
+
+    c = RelativeCopyNumber(subject="fake:curie", relative_copy_class="low-level gain")
+    assert c.subject == "fake:curie"
+    assert c.relative_copy_class == "low-level gain"
+    assert c.type == "RelativeCopyNumber"
+
+    invalid_params = [
+        {"subject": number, "copies": number},
+        {"ID": "ga4gh:id", "subject": gene, "relative_copy_class": "complete loss"},
+        {"subject": allele},
+        {"subject": "fake:curie", "relative_copy_class": "low-level gain", "extra": 0},
+        {"subject": "fake:curie", "relative_copy_class": "low-level"}
+    ]
+
+    for invalid_param in invalid_params:
+        with pytest.raises(pydantic.error_wrappers.ValidationError):
+            RelativeCopyNumber(**invalid_param)
 
 
 def test_variation_set(allele, sequence_location):
@@ -443,7 +469,6 @@ def test_variation_set(allele, sequence_location):
 
     for invalid_param in invalid_params:
         with pytest.raises(pydantic.error_wrappers.ValidationError):
-
             VariationSet(**invalid_param)
 
 
@@ -460,11 +485,53 @@ def test_feature(gene):
 
 def test_systemic_variation(gene, number):
     """Test SystemicVariation class."""
-    schema = SystemicVariation.schema()
-    assert schema["title"] == "SystemicVariation"
-    assert schema["description"] == "A Variation of multiple molecules in the context of a system,\ne.g. a genome, sample, or homologous chromosomes."  # noqa: E501
-    assert schema
-    assert schema["anyOf"][0]["$ref"] == "#/components/schemas/CopyNumber"
-
-    c = CopyNumber(subject=gene, copies=number)
+    c = AbsoluteCopyNumber(subject=gene, copies=number)
     assert SystemicVariation(__root__=c)
+
+
+def test_deprecated_objects(caplog, deprecated_allele):
+    """Test that deprecated objects work and log appropriately."""
+    seqstate_deprecated_msg = "SequenceState is deprecated. Use LiteralSequenceExpression instead."  # noqa: E501
+    simpleint_deprecated_msg = "SimpleInterval is deprecated. Use SequenceInterval instead."  # noqa: E501
+    seqstate = SequenceState(**deprecated_allele["state"])
+    assert seqstate.type == "SequenceState"
+    assert seqstate.sequence == "T"
+    assert seqstate_deprecated_msg in caplog.text
+
+    invalid_params = [
+        {"sequence": "t"},
+        {"sequence": "T", "type": "Sequence"},
+        {"sequence": "hello,world"}
+    ]
+    for invalid_param in invalid_params:
+        with pytest.raises(pydantic.error_wrappers.ValidationError):
+            SequenceState(**invalid_param)
+
+    simpleint = SimpleInterval(**deprecated_allele["location"]["interval"])
+    assert simpleint.type == "SimpleInterval"
+    assert simpleint.start == 140753335
+    assert simpleint.end == 140753336
+    assert simpleint_deprecated_msg in caplog.text
+
+    invalid_params = [
+        {"start": 2.0, "end": 2},
+        {"start": 2, "end": 2, "type": "CytobandInterval"},
+        {"start": 2, "end": '2'}
+    ]
+    for invalid_param in invalid_params:
+        with pytest.raises(pydantic.error_wrappers.ValidationError):
+            SimpleInterval(**invalid_param)
+
+    allele = Allele(**deprecated_allele)
+    assert allele.state.type == "SequenceState"
+    assert allele.state.sequence == "T"
+    assert seqstate_deprecated_msg in caplog.text
+    assert allele.location.interval.type == "SimpleInterval"
+    assert allele.location.interval.start == 140753335
+    assert allele.location.interval.end == 140753336
+    assert simpleint_deprecated_msg in caplog.text
+
+    # should default to non-deprecated option when possible
+    allele = Allele(state={"sequence": "T"},
+                    location=deprecated_allele["location"])
+    assert allele.state.type == "LiteralSequenceExpression"
