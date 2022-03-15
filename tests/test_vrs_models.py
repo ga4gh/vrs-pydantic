@@ -6,8 +6,8 @@ from ga4gh.vrsatile.pydantic.vrs_models import Number, Comparator, \
     SequenceInterval, CytobandInterval, DerivedSequenceExpression, \
     LiteralSequenceExpression, RepeatedSequenceExpression, Gene, \
     SequenceLocation, VariationSet, Haplotype, \
-    CopyNumber, Allele, ChromosomeLocation, Feature, SystemicVariation, \
-    SimpleInterval, SequenceState
+    AbsoluteCopyNumber, Allele, ChromosomeLocation, Feature, SystemicVariation, \
+    SimpleInterval, SequenceState, RelativeCopyNumber
 
 
 def test_number(number):
@@ -385,20 +385,20 @@ def test_haplotype(allele):
             Haplotype(**invalid_param)
 
 
-def test_copy_number(number, definite_range, indefinite_range, gene,
-                     allele):
-    """Test that Copy Number model works correctly."""
-    c = CopyNumber(subject=gene, copies=number)
+def test_absolute_copy_number(number, definite_range, indefinite_range, gene, allele):
+    """Test that Absolute Copy Number model works correctly."""
+    c = AbsoluteCopyNumber(subject=gene, copies=number)
     assert c.subject.gene_id == "ncbigene:348"
     assert c.copies.value == 3
-    assert c.type == "CopyNumber"
+    assert c.type == "AbsoluteCopyNumber"
 
-    c = CopyNumber(subject=gene, copies=definite_range, type="CopyNumber")
+    c = AbsoluteCopyNumber(
+        subject=gene, copies=definite_range, type="AbsoluteCopyNumber")
     assert c.subject.gene_id == "ncbigene:348"
     assert c.copies.min == 22
     assert c.copies.max == 33
 
-    c = CopyNumber(subject=gene, copies=indefinite_range)
+    c = AbsoluteCopyNumber(subject=gene, copies=indefinite_range)
     assert c.subject.gene_id == "ncbigene:348"
     assert c.copies.value == 3
     assert c.copies.comparator == ">="
@@ -411,7 +411,41 @@ def test_copy_number(number, definite_range, indefinite_range, gene,
 
     for invalid_param in invalid_params:
         with pytest.raises(pydantic.error_wrappers.ValidationError):
-            CopyNumber(**invalid_param)
+            AbsoluteCopyNumber(**invalid_param)
+
+
+def test_relative_copy_number(number, definite_range, indefinite_range, gene, allele):
+    """Test that Relative Copy Number model works correctly."""
+    c = RelativeCopyNumber(subject=gene, relative_copy_class="complete loss")
+    assert c.subject.gene_id == "ncbigene:348"
+    assert c.relative_copy_class == "complete loss"
+    assert c.type == "RelativeCopyNumber"
+
+    c = RelativeCopyNumber(
+        subject=allele, relative_copy_class="partial loss", type="RelativeCopyNumber")
+    assert c.subject.type == "Allele"
+    assert c.subject.location.type == "SequenceLocation"
+    assert c.subject.location.sequence_id == \
+           "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl"
+    assert c.relative_copy_class == "partial loss"
+    assert c.type == "RelativeCopyNumber"
+
+    c = RelativeCopyNumber(subject="fake:curie", relative_copy_class="low-level gain")
+    assert c.subject == "fake:curie"
+    assert c.relative_copy_class == "low-level gain"
+    assert c.type == "RelativeCopyNumber"
+
+    invalid_params = [
+        {"subject": number, "copies": number},
+        {"ID": "ga4gh:id", "subject": gene, "relative_copy_class": "complete loss"},
+        {"subject": allele},
+        {"subject": "fake:curie", "relative_copy_class": "low-level gain", "extra": 0},
+        {"subject": "fake:curie", "relative_copy_class": "low-level"}
+    ]
+
+    for invalid_param in invalid_params:
+        with pytest.raises(pydantic.error_wrappers.ValidationError):
+            RelativeCopyNumber(**invalid_param)
 
 
 def test_variation_set(allele, sequence_location):
@@ -435,7 +469,6 @@ def test_variation_set(allele, sequence_location):
 
     for invalid_param in invalid_params:
         with pytest.raises(pydantic.error_wrappers.ValidationError):
-
             VariationSet(**invalid_param)
 
 
@@ -452,13 +485,7 @@ def test_feature(gene):
 
 def test_systemic_variation(gene, number):
     """Test SystemicVariation class."""
-    schema = SystemicVariation.schema()
-    assert schema["title"] == "SystemicVariation"
-    assert schema["description"] == "A Variation of multiple molecules in the context of a system,\ne.g. a genome, sample, or homologous chromosomes."  # noqa: E501
-    assert schema
-    assert schema["anyOf"][0]["$ref"] == "#/components/schemas/CopyNumber"
-
-    c = CopyNumber(subject=gene, copies=number)
+    c = AbsoluteCopyNumber(subject=gene, copies=number)
     assert SystemicVariation(__root__=c)
 
 

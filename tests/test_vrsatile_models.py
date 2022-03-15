@@ -366,7 +366,7 @@ def test_canonical_variation(allele):
 
     # check forbid extra
     with pytest.raises(pydantic.error_wrappers.ValidationError):
-        cv = CanonicalVariation(
+        CanonicalVariation(
             _id="clinvar:13961",
             complement=False,
             variation=allele,
