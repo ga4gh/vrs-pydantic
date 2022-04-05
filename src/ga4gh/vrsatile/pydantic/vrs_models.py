@@ -372,7 +372,7 @@ class AbsoluteCopyNumber(BaseModel):
 
     id: Optional[CURIE] = Field(alias='_id')
     type: Literal[VRSTypes.ABSOLUTE_COPY_NUMBER] = VRSTypes.ABSOLUTE_COPY_NUMBER
-    subject: Union[MolecularVariation, Feature, SequenceExpression, CURIE]
+    subject: Union[SequenceLocation, Feature]
     copies: Union[Number, IndefiniteRange, DefiniteRange]
 
     _get_id_val = validator('id', allow_reuse=True)(return_value)
@@ -392,7 +392,7 @@ class RelativeCopyNumber(BaseModel):
 
     id: Optional[CURIE] = Field(alias='_id')
     type: Literal[VRSTypes.RELATIVE_COPY_NUMBER] = VRSTypes.RELATIVE_COPY_NUMBER
-    subject: Union[MolecularVariation, Feature, SequenceExpression, CURIE]
+    subject: Union[SequenceLocation, Feature]
     relative_copy_class: RelativeCopyClass
 
     _get_id_val = validator('id', allow_reuse=True)(return_value)

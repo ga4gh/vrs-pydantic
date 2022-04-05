@@ -385,7 +385,8 @@ def test_haplotype(allele):
             Haplotype(**invalid_param)
 
 
-def test_absolute_copy_number(number, definite_range, indefinite_range, gene, allele):
+def test_absolute_copy_number(number, definite_range, indefinite_range, gene, allele,
+                              sequence_location):
     """Test that Absolute Copy Number model works correctly."""
     c = AbsoluteCopyNumber(subject=gene, copies=number)
     assert c.subject.gene_id == "ncbigene:348"
@@ -403,10 +404,14 @@ def test_absolute_copy_number(number, definite_range, indefinite_range, gene, al
     assert c.copies.value == 3
     assert c.copies.comparator == ">="
 
+    c = AbsoluteCopyNumber(subject=sequence_location, copies=number)
+    assert c.subject.type == "SequenceLocation"
+
     invalid_params = [
         {"subjects": number, "copies": number},
         {"ID": "ga4gh:id", "subject": gene, "copies": number},
-        {"subject": [allele], "copies": number}
+        {"subject": [allele], "copies": number},
+        {"subject": "ga4gh:id", "copies": number}
     ]
 
     for invalid_param in invalid_params:
@@ -414,33 +419,26 @@ def test_absolute_copy_number(number, definite_range, indefinite_range, gene, al
             AbsoluteCopyNumber(**invalid_param)
 
 
-def test_relative_copy_number(number, definite_range, indefinite_range, gene, allele):
+def test_relative_copy_number(number, sequence_location, gene, allele):
     """Test that Relative Copy Number model works correctly."""
     c = RelativeCopyNumber(subject=gene, relative_copy_class="complete loss")
     assert c.subject.gene_id == "ncbigene:348"
     assert c.relative_copy_class == "complete loss"
     assert c.type == "RelativeCopyNumber"
 
-    c = RelativeCopyNumber(
-        subject=allele, relative_copy_class="partial loss", type="RelativeCopyNumber")
-    assert c.subject.type == "Allele"
-    assert c.subject.location.type == "SequenceLocation"
-    assert c.subject.location.sequence_id == \
-           "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl"
-    assert c.relative_copy_class == "partial loss"
-    assert c.type == "RelativeCopyNumber"
-
-    c = RelativeCopyNumber(subject="fake:curie", relative_copy_class="low-level gain")
-    assert c.subject == "fake:curie"
+    c = RelativeCopyNumber(subject=sequence_location,
+                           relative_copy_class="low-level gain")
+    assert c.subject.type == "SequenceLocation"
     assert c.relative_copy_class == "low-level gain"
-    assert c.type == "RelativeCopyNumber"
 
     invalid_params = [
         {"subject": number, "copies": number},
         {"ID": "ga4gh:id", "subject": gene, "relative_copy_class": "complete loss"},
         {"subject": allele},
         {"subject": "fake:curie", "relative_copy_class": "low-level gain", "extra": 0},
-        {"subject": "fake:curie", "relative_copy_class": "low-level"}
+        {"subject": "fake:curie", "relative_copy_class": "low-level"},
+        {"subject": allele, "relative_copy_class": "partial loss"},
+        {"subject": "fake:curie", "relative_copy_class": "low-level gain"}
     ]
 
     for invalid_param in invalid_params:
