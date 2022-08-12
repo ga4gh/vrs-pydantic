@@ -1,11 +1,13 @@
 """Module for testing the VRSATILE model."""
 import pydantic
+from ga4gh.vrsatile.pydantic.core_models import Condition, Disease, Extension, Phenotype
 import pytest
 
 from ga4gh.vrsatile.pydantic.vrs_models import Number, SequenceLocation, \
-    SequenceInterval, LiteralSequenceExpression, Allele, Sequence
+    LiteralSequenceExpression, Allele, Sequence
 from ga4gh.vrsatile.pydantic.vrsatile_models import  \
-    MoleculeContext, Extension, Expression, ValueObjectDescriptor, \
+    CanonicalVariationDescriptor, ConditionDescriptor, DiseaseDescriptor, \
+    MoleculeContext, Expression, PhenotypeDescriptor, ValueObjectDescriptor, \
     SequenceDescriptor, LocationDescriptor, GeneDescriptor, \
     VariationDescriptor, VCFRecord, CanonicalVariation, ComplexVariation, \
     ComplexVariationOperator, CategoricalVariationDescriptor, VariationMember
@@ -38,30 +40,19 @@ def simple_repeating_del(variation_member):
     """Provide example of a complete Categorical Variation Descriptor."""
     return {
         "id": "clinvar:17014",
-        "version": "2022-02-10",
         "type": "CategoricalVariationDescriptor",
         "categorical_variation": {
-            "_id": "unk:?",
-            "complement": False,
+            "id": "unk:?",
             "type": "CanonicalVariation",
-            "variation": {
-                "_id": "ga4gh:VA.KGopzor-bEw8Ot5sAQQ5o5SVx4o7TuLN",
+            "canonical_context": {
+                "id": "ga4gh:VA.KGopzor-bEw8Ot5sAQQ5o5SVx4o7TuLN",
                 "type": "Allele",
                 "location": {
-                    "_id": "ga4gh:VSL.p4e9kMEY9PrKZ1BbNRuFr6n30DkwXWlX",
+                    "id": "ga4gh:VSL.p4e9kMEY9PrKZ1BbNRuFr6n30DkwXWlX",
                     "type": "SequenceLocation",
                     "sequence_id": "ga4gh:SQ._0wi-qoDrvram155UmcSC-zA5ZK4fpLT",
-                    "interval": {
-                        "type": "SequenceInterval",
-                        "start": {
-                            "type": "Number",
-                            "value": 20189346
-                        },
-                        "end": {
-                            "type": "Number",
-                            "value": 20189349
-                        }
-                    }
+                    "start": {"type": "Number", "value": 20189346},
+                    "end": {"type": "Number", "value": 20189349}
                 },
                 "state": {
                     "type": "LiteralSequenceExpression",
@@ -73,6 +64,29 @@ def simple_repeating_del(variation_member):
     }
 
 
+@pytest.fixture(scope="module")
+def phenotype_descriptor():
+    """Create test fixture for phenotype descriptor"""
+    return PhenotypeDescriptor(
+        id="phenotype:1",
+        phenotype=Phenotype(id="HP:0000002"),
+        label="Abnormality of body height"
+    )
+
+
+@pytest.fixture(scope="module")
+def disease_descriptor():
+    """Create test fixture for disease descriptor"""
+    return DiseaseDescriptor(
+        id="disease:1",
+        disease=Disease(id="ncit:C2926"),
+        label="Lung Non-Small Cell Carcinoma",
+        alternate_labels=["NSCLC", "Non-Small Cell Carcinoma of the Lung"],
+        xrefs=["mondo:0005233", "oncotree:NSCLC", "DOID:3908"],
+        extensions=[Extension(name="associated_with", value=["HP:0030358"])]
+    )
+
+
 def test_molecule_context():
     """Test that Molecule Context model works correctly."""
     assert [key for key in MoleculeContext.__members__.keys()] == \
@@ -80,29 +94,6 @@ def test_molecule_context():
     assert MoleculeContext.GENOMIC == 'genomic'
     assert MoleculeContext.TRANSCRIPT == "transcript"
     assert MoleculeContext.PROTEIN == "protein"
-
-
-def test_extension(extension):
-    """Test that Extension model works correctly."""
-    assert extension.name == "name"
-    assert len(extension.value) == 2
-    assert extension.value[0] == "value1"
-    assert extension.value[1] == "value2"
-    assert extension.type == "Extension"
-
-    e = Extension(name="example", value="value", type="Extension")
-    assert e.name == "example"
-    assert e.value == "value"
-    assert e.type == "Extension"
-
-    invalid_params = [
-        {"name": 1, "value": extension.value},
-        {"name": "example", "value": extension.value, "type": "Expression"}
-    ]
-
-    for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
-            Extension(**invalid_param)
 
 
 def test_expression(expression):
@@ -134,14 +125,16 @@ def test_expression(expression):
             Expression(**invalid_param)
 
 
-def test_value_object_descriptor(extension, expression):
+def test_value_object_descriptor(extension, expression, gene):
     """Test that Value Object Descriptor model works correctly."""
-    vod = ValueObjectDescriptor(id="value:id", type="VariationDescriptor")
+    vod = ValueObjectDescriptor(id="value:id", type="VariationDescriptor",
+                                value_id="value:id")
     assert vod.id == "value:id"
     assert vod.type == "VariationDescriptor"
+    assert vod.value_id == "value:id"
 
     vod = ValueObjectDescriptor(id="value:id", type="VariationDescriptor",
-                                label="label", description="description",
+                                value=gene, label="label", description="description",
                                 xrefs=["hgnc:4"], alternate_labels=["a", "b"],
                                 extensions=[extension])
     assert vod.id == "value:id"
@@ -151,11 +144,7 @@ def test_value_object_descriptor(extension, expression):
     assert vod.xrefs == ["hgnc:4"]
     assert vod.alternate_labels == ["a", "b"]
     assert vod.extensions == [extension]
-
-    assert ValueObjectDescriptor(id="normalize.disease:id",
-                                 type="DiseaseDescriptor",
-                                 disease_id="ncit:C53",
-                                 label="Disease label")
+    assert vod.value == gene
 
     invalid_params = [
         {"id": "vod:", "type": "GeneDescriptor"},
@@ -185,7 +174,6 @@ def test_sequence_descriptor(sequence_descriptor, gene):
     invalid_params = [
         {"id": "s:1", "sequence_id": sequence_descriptor.sequence_id,
          "type": "VariationDescriptor"},
-        {"id": "sequence", "sequence_id": sequence_descriptor.sequence_id},
         {"id": sequence_descriptor.id},
         {"id": sequence_descriptor.id, "sequence": gene}
     ]
@@ -211,19 +199,15 @@ def test_location_descriptor(location_descriptor, sequence_location, gene):
                             type="LocationDescriptor")
     assert ld.id == "vod:id2"
     assert ld.location_id == "gene:b"
-    assert ld.location.sequence_id == \
-           "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl"
-    assert ld.location.interval.type == "SequenceInterval"
-    assert ld.location.interval.start.type == "Number" ==\
-           ld.location.interval.end.type
-    assert ld.location.interval.start.value == 44908821
-    assert ld.location.interval.end.value == 44908822
+    assert ld.location.sequence_id == "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl"
+    assert ld.location.start.type == "Number" == ld.location.end.type
+    assert ld.location.start.value == 44908821
+    assert ld.location.end.value == 44908822
     assert ld.location.type == "SequenceLocation"
 
     invalid_params = [
         {"id": "s:1", "location_id": location_descriptor.location_id,
          "type": "SequenceDescriptor"},
-        {"id": "sequence", "location_id": location_descriptor.location_id},
         {"id": location_descriptor.id},
         {"id": location_descriptor.id, "sequence": gene}
     ]
@@ -242,13 +226,11 @@ def test_gene_descriptor(gene_descriptor, gene):
     g = GeneDescriptor(id="vod:gene", gene=gene, gene_id="gene:348",
                        type="GeneDescriptor")
     assert g.id == "vod:gene"
-    assert g.gene.gene_id == "ncbigene:348"
+    assert g.gene.id == "ncbigene:348"
     assert g.gene.type == "Gene"
     assert g.gene_id == "gene:348"
 
     invalid_params = [
-        {"id": "g:1", "gene_id": gene_descriptor.gene_id, "type": "Gene"},
-        {"id": "sequence", "gene_id": gene_descriptor.gene_id},
         {"id": gene_descriptor.id},
         {"id": gene_descriptor.id, "gene": "BRAF"}
     ]
@@ -290,7 +272,6 @@ def test_variation_descriptor(allele, gene_descriptor, vcf_record, expression,
     vd = VariationDescriptor(**braf_v600e_vd)
     assert vd.variation.type == "Allele"
     assert vd.variation.location.type == "SequenceLocation"
-    assert vd.variation.location.interval.type == "SequenceInterval"
 
     vd = VariationDescriptor(id="var:id", variation=allele,
                              type="VariationDescriptor",
@@ -304,11 +285,10 @@ def test_variation_descriptor(allele, gene_descriptor, vcf_record, expression,
     assert vd.variation.location.type == "SequenceLocation"
     assert vd.variation.location.sequence_id == \
            "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl"
-    assert vd.variation.location.interval.type == "SequenceInterval"
-    assert vd.variation.location.interval.start.type == "Number" ==\
-           vd.variation.location.interval.end.type
-    assert vd.variation.location.interval.start.value == 44908821
-    assert vd.variation.location.interval.end.value == 44908822
+    assert vd.variation.location.start.type == "Number" == \
+           vd.variation.location.end.type
+    assert vd.variation.location.start.value == 44908821
+    assert vd.variation.location.end.value == 44908822
     assert vd.variation.location.type == "SequenceLocation"
     assert vd.variation.state.sequence == "C"
     assert vd.gene_context.id == "vod:id"
@@ -346,54 +326,67 @@ def test_variation_descriptor(allele, gene_descriptor, vcf_record, expression,
 
 def test_canonical_variation(allele):
     """Test creation and usage of canonical variations."""
-    cv = CanonicalVariation(
-        _id="clinvar:13961",
-        complement=True,
-        variation=allele
-    )
-    assert cv.complement is True
+    cv = CanonicalVariation(id="clinvar:13961", canonical_context=allele)
 
-    assert cv.variation.type == "Allele"
-    assert cv.variation.location.type == "SequenceLocation"
-    assert cv.variation.location.sequence_id == \
+    assert cv.canonical_context.type == "Allele"
+    assert cv.canonical_context.location.type == "SequenceLocation"
+    assert cv.canonical_context.location.sequence_id == \
         "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl"
 
-    assert cv.variation.state.type.value == "LiteralSequenceExpression"
-    assert cv.variation.state.sequence == "C"
+    assert cv.canonical_context.state.type.value == "LiteralSequenceExpression"
+    assert cv.canonical_context.state.sequence == "C"
 
-    assert set(cv.schema()["properties"].keys()) == {"_id", "type",
-                                                     "complement", "variation"}
+    assert set(cv.schema()["properties"].keys()) == {"id", "type", "canonical_context"}
 
     # check forbid extra
     with pytest.raises(pydantic.error_wrappers.ValidationError):
         CanonicalVariation(
-            _id="clinvar:13961",
+            id="clinvar:13961",
             complement=False,
-            variation=allele,
-            variation_id="clinvar:13961"
+            canonical_context=allele
         )
+
+
+def test_complex_variation(allele, braf_v600e_variation):
+    """Test that ComplexVariation model works correctly"""
+    canonical_v1 = CanonicalVariation(id="canonical:1", canonical_context=allele)
+    canonical_v2 = CanonicalVariation(id="canonical:2",
+                                      canonical_context=braf_v600e_variation)
+    complex_variation = ComplexVariation(
+        id="complex:1",
+        operands=[canonical_v1, canonical_v2],
+        operator="AND"
+    )
+    assert complex_variation.id == "complex:1"
+    assert complex_variation.operands == [canonical_v1, canonical_v2]
+    assert complex_variation.operator == "AND"
+    assert complex_variation.type == "ComplexVariation"
+
+    invalid_params = [
+        {"id": "value:1", "operands": [canonical_v1]},
+        {"id": "value:1", "operands": [canonical_v1, canonical_v2], "operator": "NOT"}
+    ]
+    for invalid_param in invalid_params:
+        with pytest.raises(pydantic.error_wrappers.ValidationError):
+            ComplexVariation(**invalid_param)
 
 
 def test_categorical_variation(allele):
     """Test creation and usage of categorical variations."""
     cv = ComplexVariation(
-        _id="complex:variation",
+        id="complex:variation",
         operands=[
             CanonicalVariation(
-                _id="clinvar:13961",
-                complement=False,
-                variation=allele
+                id="clinvar:13961",
+                canonical_context=allele
             ),
             CanonicalVariation(
-                _id="clinvar:375941",
-                complement=False,
-                variation=Allele(
+                id="clinvar:375941",
+                canonical_context=Allele(
                     location=SequenceLocation(
-                        sequence_id="ga4gh:SQ.F-LrLMe1SRpfUZHkQmvkVKFEGaoDeHul",  # noqa: E501
-                        interval=SequenceInterval(
-                            start=Number(value=140753336),
-                            end=Number(value=140753337)
-                        )
+                        sequence_id="ga4gh:SQ.F-LrLMe1SRpfUZHkQmvkVKFEGaoDeHul",
+                        start=Number(value=140753336),
+                        end=Number(value=140753337)
                     ),
                     state=LiteralSequenceExpression(
                         sequence=Sequence(__root__="T")
@@ -401,39 +394,35 @@ def test_categorical_variation(allele):
                 )
             )
         ],
-        operator=ComplexVariationOperator.AND,
-        complement=False
+        operator=ComplexVariationOperator.AND
     )
 
     assert cv.id == "complex:variation"
-    assert cv.complement is False
     assert cv.operator == "AND"
 
     assert len(cv.operands) == 2
 
     op_0: CanonicalVariation = cv.operands[0]
     assert op_0.id == "clinvar:13961"
-    assert op_0.complement is False
-    assert op_0.variation is not None
-    assert op_0.variation.type == "Allele"
-    assert op_0.variation.location.type == "SequenceLocation"
-    assert op_0.variation.location.sequence_id == \
+    assert op_0.canonical_context is not None
+    assert op_0.canonical_context.type == "Allele"
+    assert op_0.canonical_context.location.type == "SequenceLocation"
+    assert op_0.canonical_context.location.sequence_id == \
         "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl"
-    assert op_0.variation.location.interval.start.value == 44908821
-    assert op_0.variation.location.interval.end.value == 44908822
-    assert op_0.variation.state.sequence == "C"
+    assert op_0.canonical_context.location.start.value == 44908821
+    assert op_0.canonical_context.location.end.value == 44908822
+    assert op_0.canonical_context.state.sequence == "C"
 
     op_1: CanonicalVariation = cv.operands[1]
     assert op_1.id == "clinvar:375941"
-    assert op_1.complement is False
-    assert op_1.variation is not None
-    assert op_1.variation.type == "Allele"
-    assert op_1.variation.location.type == "SequenceLocation"
-    assert op_1.variation.location.sequence_id == \
+    assert op_1.canonical_context is not None
+    assert op_1.canonical_context.type == "Allele"
+    assert op_1.canonical_context.location.type == "SequenceLocation"
+    assert op_1.canonical_context.location.sequence_id == \
         "ga4gh:SQ.F-LrLMe1SRpfUZHkQmvkVKFEGaoDeHul"
-    assert op_1.variation.location.interval.start.value == 140753336
-    assert op_1.variation.location.interval.end.value == 140753337
-    assert op_1.variation.state.sequence == "T"
+    assert op_1.canonical_context.location.start.value == 140753336
+    assert op_1.canonical_context.location.end.value == 140753337
+    assert op_1.canonical_context.state.sequence == "T"
 
     with pytest.raises(pydantic.ValidationError):
         ComplexVariation(
@@ -474,18 +463,15 @@ def test_categorical_variation_descriptor(simple_repeating_del):
     """Test categorical variation descriptor"""
     cvd = CategoricalVariationDescriptor(**simple_repeating_del)
     assert cvd.id == "clinvar:17014"
-    assert cvd.version == "2022-02-10"
     assert cvd.type == "CategoricalVariationDescriptor"
     assert cvd.categorical_variation.id == "unk:?"
-    assert cvd.categorical_variation.complement is False
     assert cvd.categorical_variation.type == "CanonicalVariation"
-    assert cvd.categorical_variation.variation.id == \
+    assert cvd.categorical_variation.canonical_context.id == \
         "ga4gh:VA.KGopzor-bEw8Ot5sAQQ5o5SVx4o7TuLN"
-    location = cvd.categorical_variation.variation.location
+    location = cvd.categorical_variation.canonical_context.location
     assert location.id == "ga4gh:VSL.p4e9kMEY9PrKZ1BbNRuFr6n30DkwXWlX"
     assert location.sequence_id == "ga4gh:SQ._0wi-qoDrvram155UmcSC-zA5ZK4fpLT"
-    assert location.interval.type == "SequenceInterval"
-    assert cvd.categorical_variation.variation.state.sequence == "GG"
+    assert cvd.categorical_variation.canonical_context.state.sequence == "GG"
 
     assert len(cvd.members) == 1
     member = cvd.members[0]
@@ -498,3 +484,105 @@ def test_categorical_variation_descriptor(simple_repeating_del):
     assert expressions[1].type == "Expression"
     assert expressions[1].syntax == "hgvs.g"
     assert expressions[1].value == "NC_000013.10:g.20763488del"
+
+
+def test_disease_descriptor(disease_descriptor):
+    """Test that DiseaseDescriptor model works correctly"""
+    assert disease_descriptor.id == "disease:1"
+    assert disease_descriptor.disease.id == "ncit:C2926"
+    assert disease_descriptor.disease.type == "Disease"
+    assert disease_descriptor.label == "Lung Non-Small Cell Carcinoma"
+    assert disease_descriptor.alternate_labels == \
+        ["NSCLC", "Non-Small Cell Carcinoma of the Lung"]
+    assert disease_descriptor.xrefs == ["mondo:0005233", "oncotree:NSCLC", "DOID:3908"]
+    assert len(disease_descriptor.extensions) == 1
+    ext = disease_descriptor.extensions[0]
+    assert ext.name == "associated_with"
+    assert ext.value == ["HP:0030358"]
+
+    disease_descr = DiseaseDescriptor(disease_id="ncit:C2926")
+    assert disease_descr.disease_id == "ncit:C2926"
+
+    with pytest.raises(pydantic.error_wrappers.ValidationError):
+        DiseaseDescriptor(id="disease:1")
+
+
+def test_phenotype_descriptor(phenotype_descriptor):
+    """Test that PhenotypeDescriptor model works correctly"""
+    assert phenotype_descriptor.id == "phenotype:1"
+    assert phenotype_descriptor.phenotype.id == "HP:0000002"
+    assert phenotype_descriptor.phenotype.type == "Phenotype"
+    assert phenotype_descriptor.label == "Abnormality of body height"
+    assert phenotype_descriptor.type == "PhenotypeDescriptor"
+
+    phenotype_descr = PhenotypeDescriptor(phenotype_id="HP:0000002")
+    assert phenotype_descr.phenotype_id == "HP:0000002"
+
+    with pytest.raises(pydantic.error_wrappers.ValidationError):
+        PhenotypeDescriptor(id="phenotype:1")
+
+
+def test_condition_descriptor(phenotype_descriptor, disease_descriptor, phenotype,
+                              disease):
+    """Test that ConditionDescriptor model works correctly"""
+    condition_descr = ConditionDescriptor(
+        id="condition:1",
+        condition=Condition(members=[disease, phenotype], type="Condition"),
+        member_descriptors=[disease_descriptor, phenotype_descriptor],
+        label="condition descriptor"
+    )
+    assert condition_descr.type == "ConditionDescriptor"
+    assert condition_descr.condition.members == [disease, phenotype]
+    assert condition_descr.condition.type == "Condition"
+    assert condition_descr.member_descriptors == [disease_descriptor,
+                                                  phenotype_descriptor]
+    assert condition_descr.label == "condition descriptor"
+
+    condition_descr = ConditionDescriptor(
+        condition_id="condition:1",
+        member_descriptors=[phenotype_descriptor]
+    )
+    assert condition_descr.condition_id == "condition:1"
+    assert condition_descr.member_descriptors == [phenotype_descriptor]
+
+    invalid_params = [
+        {"member_descriptors": [phenotype_descriptor]},
+        {"id": "condition:1", "condition_id": "condition:1"},
+        {"member_descriptors": phenotype_descriptor, "condition_id": "condition:1"},
+        {"condition": {"member": ["disease:1", "phenotype:1"]},
+         "member_descriptors": [disease_descriptor, phenotype_descriptor]}
+    ]
+    for invalid_param in invalid_params:
+        with pytest.raises(pydantic.error_wrappers.ValidationError):
+            ConditionDescriptor(**invalid_param)
+
+
+def test_canonical_variation_descriptor(allele):
+    """Test that CanonicalVariationDescriptor model works correctly"""
+    canonical_variation = CanonicalVariation(id="clinvar:13961",
+                                             canonical_context=allele)
+    subject_descriptor = VariationDescriptor(variation_id="clinvar:13961",
+                                             label="test")
+    canonical_vd = CanonicalVariationDescriptor(
+        subject_variation_descriptor=subject_descriptor,
+        canonical_variation=canonical_variation
+    )
+    assert canonical_vd.type == "CanonicalVariationDescriptor"
+    assert canonical_vd.subject_variation_descriptor == subject_descriptor
+    assert canonical_vd.canonical_variation == canonical_variation
+
+    canonical_vd = CanonicalVariationDescriptor(
+        subject_variation_descriptor=subject_descriptor,
+        canonical_variation_id="canonical_variation:1"
+    )
+    assert canonical_vd.type == "CanonicalVariationDescriptor"
+    assert canonical_vd.subject_variation_descriptor == subject_descriptor
+    assert canonical_vd.canonical_variation_id == "canonical_variation:1"
+
+    invalid_params = [
+        {"canonical_variation_id": "curie:1"},
+        {"subject_variation_descriptor": subject_descriptor}
+    ]
+    for invalid_param in invalid_params:
+        with pytest.raises(pydantic.error_wrappers.ValidationError):
+            CanonicalVariationDescriptor(**invalid_param)

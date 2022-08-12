@@ -1,13 +1,14 @@
 """Module for testing the VRS model."""
-import pydantic
 import pytest
-from ga4gh.vrsatile.pydantic.vrs_models import Number, Comparator, \
-    IndefiniteRange, DefiniteRange, Text, \
-    SequenceInterval, CytobandInterval, DerivedSequenceExpression, \
-    LiteralSequenceExpression, RepeatedSequenceExpression, Gene, \
-    SequenceLocation, VariationSet, Haplotype, \
+
+import pydantic
+
+from ga4gh.vrsatile.pydantic.vrs_models import ComposedSequenceExpression, Genotype,\
+    GenotypeMember, Number, Comparator, IndefiniteRange, DefiniteRange, Text, \
+    CytobandInterval, DerivedSequenceExpression, LiteralSequenceExpression, \
+    RepeatedSequenceExpression, SequenceLocation, VariationSet, Haplotype, \
     AbsoluteCopyNumber, Allele, ChromosomeLocation, Feature, SystemicVariation, \
-    SimpleInterval, SequenceState, RelativeCopyNumber
+    RelativeCopyNumber
 
 
 def test_number(number):
@@ -75,24 +76,12 @@ def test_definite_range(definite_range):
 def test_text():
     """Test that Text model works correctly."""
     definition = "APOE_LOSS"
-    t = Text(definition=definition)
-    assert t.definition == definition
-    assert t.type == "Text"
-
-    assert Text(definition=definition, type="Text")
-
-    t = Text(_id="ga4gh:id", definition=definition)
+    t = Text(id="ga4gh:id", definition=definition)
     assert t.definition == definition
     assert t.type == "Text"
     assert t.id == "ga4gh:id"
-    t_dict = t.dict(by_alias=True)
-    assert t_dict['_id'] == 'ga4gh:id'
-    assert 'id' not in t_dict.keys()
 
     params = {"definition": definition, "id": "ga4gh:id"}
-    assert Text(**params)
-
-    params = {"definition": definition, "_id": "ga4gh:id"}
     assert Text(**params)
 
     invalid_params = [
@@ -103,28 +92,6 @@ def test_text():
     for invalid_param in invalid_params:
         with pytest.raises(pydantic.error_wrappers.ValidationError):
             Text(**invalid_param)
-
-
-def test_sequence_interval(sequence_interval):
-    """Test that Sequence Interval model works correctly."""
-    assert sequence_interval.start.value == 44908821
-    assert sequence_interval.end.value == 44908822
-    assert sequence_interval.type == "SequenceInterval"
-
-    assert SequenceInterval(
-        start=Number(value=44908821),
-        end=Number(value=44908822),
-        type="SequenceInterval"
-    )
-
-    invalid_params = [
-        {"start": 44908821, "end": 44908822},
-        {"start": {"value": 2}, "end": {"value": 3}, "type": "M"}
-    ]
-
-    for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
-            SequenceInterval(**invalid_param)
 
 
 def test_cytoband_interval(cytoband_interval):
@@ -147,11 +114,10 @@ def test_cytoband_interval(cytoband_interval):
             CytobandInterval(**invalid_param)
 
 
-def test_literal_sequence_expression():
+def test_literal_sequence_expression(literal_sequence_expression):
     """Test that Literal Sequence Expression model works correctly."""
-    lse = LiteralSequenceExpression(sequence="ACGT")
-    assert lse.sequence == "ACGT"
-    assert lse.type == "LiteralSequenceExpression"
+    assert literal_sequence_expression.sequence == "ACGT"
+    assert literal_sequence_expression.type == "LiteralSequenceExpression"
 
     assert LiteralSequenceExpression(sequence="ACGT",
                                      type="LiteralSequenceExpression")
@@ -165,24 +131,6 @@ def test_literal_sequence_expression():
     for invalid_param in invalid_params:
         with pytest.raises(pydantic.error_wrappers.ValidationError):
             LiteralSequenceExpression(**invalid_param)
-
-
-def test_gene():
-    """Test that Gene model works correctly."""
-    g = Gene(gene_id="hgnc:5")
-    assert g.gene_id == "hgnc:5"
-    assert g.type == "Gene"
-
-    assert Gene(gene_id="hgnc:5", type="Gene")
-
-    invalid_params = [
-        {"gene_id": "hgnc5"},
-        {"gene_id": "test:1", "type": "GeneDescriptor"}
-    ]
-
-    for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
-            Gene(**invalid_param)
 
 
 def test_chromosome_location(chromosome_location, cytoband_interval):
@@ -214,16 +162,17 @@ def test_chromosome_location(chromosome_location, cytoband_interval):
             ChromosomeLocation(**invalid_param)
 
 
-def test_sequence_location(sequence_location, sequence_interval):
+def test_sequence_location(sequence_location):
     """Test that Sequence Location model works correctly."""
     assert sequence_location.sequence_id == \
            "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl"
-    assert sequence_location.interval.start.value == 44908821
-    assert sequence_location.interval.end.value == 44908822
+    assert sequence_location.start.value == 44908821
+    assert sequence_location.end.value == 44908822
     assert sequence_location.type == "SequenceLocation"
 
-    s = SequenceLocation(_id="sequence:id", sequence_id="refseq:NC_000007.13",
-                         interval=sequence_interval, type="SequenceLocation")
+    s = SequenceLocation(id="sequence:id", sequence_id="refseq:NC_000007.13",
+                         start=Number(value=44908821), end=Number(value=44908822),
+                         type="SequenceLocation")
     assert s.id == "sequence:id"
     assert s.sequence_id == "refseq:NC_000007.13"
     assert sequence_location.type == "SequenceLocation"
@@ -231,14 +180,16 @@ def test_sequence_location(sequence_location, sequence_interval):
     params = {
         "id": "sequence:id",
         "sequence_id": "refseq:NC_000007.13",
-        "interval": sequence_interval
+        "start": {"value": 44908821, "type": "Number"},
+        "end": {"value": 44908822, "type": "Number"}
     }
     assert SequenceLocation(**params)
 
     params = {
-        "_id": "sequence:id",
+        "id": "sequence:id",
         "sequence_id": "refseq:NC_000007.13",
-        "interval": sequence_interval
+        "start": {"value": 44908821, "type": "Number"},
+        "end": {"value": 44908822, "type": "Number"}
     }
     assert SequenceLocation(**params)
 
@@ -246,12 +197,14 @@ def test_sequence_location(sequence_location, sequence_interval):
         {
             "_id": "sequence",
             "sequence_id": "NC_000007.13",
-            "interval": sequence_interval
+            "start": {"value": 44908821, "type": "Number"},
+            "end": {"value": 44908822, "type": "Number"}
         },
         {
-            "_id": "sequence:1",
+            "id": "sequence:1",
             "sequence_id": "NC_000007.13",
-            "interval": sequence_interval,
+            "start": {"value": 44908821, "type": "Number"},
+            "end": {"value": 44908822, "type": "Number"},
             "type": "ChromosomeLocation"
         }
     ]
@@ -290,7 +243,8 @@ def test_derived_sequence_expression(sequence_location,
             DerivedSequenceExpression(**invalid_param)
 
 
-def test_repeated_sequence_expression(derived_sequence_expression, number,
+def test_repeated_sequence_expression(repeated_sequence_expression,
+                                      derived_sequence_expression,
                                       definite_range, indefinite_range):
     """Test that Repeated Sequence Expression model works correctly."""
 
@@ -298,18 +252,14 @@ def test_repeated_sequence_expression(derived_sequence_expression, number,
         """Test that seq_expr has intended values."""
         assert r.seq_expr.location.sequence_id == \
                "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl"
-        assert r.seq_expr.location.interval.start.value == 44908821
-        assert r.seq_expr.location.interval.end.value == 44908822
+        assert r.seq_expr.location.start.value == 44908821
+        assert r.seq_expr.location.end.value == 44908822
         assert r.seq_expr.reverse_complement is False
 
-    r = RepeatedSequenceExpression(
-        seq_expr=derived_sequence_expression,
-        count=number
-    )
-    _check_seq_expr(r)
-    assert r.count.value == 3
-    assert r.count.type == "Number"
-    assert r.type == "RepeatedSequenceExpression"
+    _check_seq_expr(repeated_sequence_expression)
+    assert repeated_sequence_expression.count.value == 3
+    assert repeated_sequence_expression.count.type == "Number"
+    assert repeated_sequence_expression.type == "RepeatedSequenceExpression"
 
     r = RepeatedSequenceExpression(
         seq_expr=derived_sequence_expression,
@@ -342,6 +292,33 @@ def test_repeated_sequence_expression(derived_sequence_expression, number,
             RepeatedSequenceExpression(**invalid_param)
 
 
+def test_composed_sequence_expression(derived_sequence_expression,
+                                      repeated_sequence_expression,
+                                      literal_sequence_expression):
+    """Test that ComposedSequenceExpression model works correctly"""
+    def _composed_seq_expr_checks(composed_seq_expr, comp):
+        assert composed_seq_expr.components == comp
+        assert composed_seq_expr.type == "ComposedSequenceExpression"
+
+    components = [literal_sequence_expression, derived_sequence_expression,
+                  repeated_sequence_expression]
+    cse = ComposedSequenceExpression(components=components)
+    _composed_seq_expr_checks(cse, components)
+
+    cse = ComposedSequenceExpression(**{"components": components})
+    _composed_seq_expr_checks(cse, components)
+
+    invalid_params = [
+        {"type": "ComposedSequenceExpression",
+         "components": [literal_sequence_expression]},
+        {"type": "ComposedSequenceExpression",
+         "components": [literal_sequence_expression, literal_sequence_expression]}
+    ]
+    for invalid_param in invalid_params:
+        with pytest.raises(pydantic.error_wrappers.ValidationError):
+            ComposedSequenceExpression(**invalid_param)
+
+
 def test_allele(allele, sequence_location, derived_sequence_expression):
     """Test that Allele model works correctly."""
     assert allele.type == "Allele"
@@ -364,17 +341,12 @@ def test_allele(allele, sequence_location, derived_sequence_expression):
             Allele(**invalid_param)
 
 
-def test_haplotype(allele):
+def test_haplotype(allele, haplotype):
     """Test that Haplotype model works correctly."""
-    h = Haplotype(members=["ga4gh:VA.-kUJh47Pu24Y3Wdsk1rXEDKsXWNY-68x",
-                           "ga4gh:VA.Z_rYRxpUvwqCLsCBO3YLl70o2uf9_Op1"])
-    assert len(h.members) == 2
-
-    h = Haplotype(members=[allele], type="Haplotype")
-    assert len(h.members) == 1
+    assert len(haplotype.members) == 2
 
     invalid_params = [
-        {"members": [allele], "type": "Alleles"},
+        {"members": [allele], "type": "Allele"},
         {"members": allele},
         {"members": [allele, "ga4ghVA"]},
         {"members": [allele], "id_": "ga4gh:VA"}
@@ -385,24 +357,12 @@ def test_haplotype(allele):
             Haplotype(**invalid_param)
 
 
-def test_absolute_copy_number(number, definite_range, indefinite_range, gene, allele,
-                              sequence_location):
+def test_absolute_copy_number(number, definite_range, gene, allele, sequence_location):
     """Test that Absolute Copy Number model works correctly."""
-    c = AbsoluteCopyNumber(subject=gene, copies=number)
-    assert c.subject.gene_id == "ncbigene:348"
+    c = AbsoluteCopyNumber(subject="subject:curie", copies=number)
+    assert c.subject == "subject:curie"
     assert c.copies.value == 3
     assert c.type == "AbsoluteCopyNumber"
-
-    c = AbsoluteCopyNumber(
-        subject=gene, copies=definite_range, type="AbsoluteCopyNumber")
-    assert c.subject.gene_id == "ncbigene:348"
-    assert c.copies.min == 22
-    assert c.copies.max == 33
-
-    c = AbsoluteCopyNumber(subject=gene, copies=indefinite_range)
-    assert c.subject.gene_id == "ncbigene:348"
-    assert c.copies.value == 3
-    assert c.copies.comparator == ">="
 
     c = AbsoluteCopyNumber(subject=sequence_location, copies=number)
     assert c.subject.type == "SequenceLocation"
@@ -411,7 +371,7 @@ def test_absolute_copy_number(number, definite_range, indefinite_range, gene, al
         {"subjects": number, "copies": number},
         {"ID": "ga4gh:id", "subject": gene, "copies": number},
         {"subject": [allele], "copies": number},
-        {"subject": "ga4gh:id", "copies": number}
+        {"subject": gene, "copies": definite_range}
     ]
 
     for invalid_param in invalid_params:
@@ -421,8 +381,8 @@ def test_absolute_copy_number(number, definite_range, indefinite_range, gene, al
 
 def test_relative_copy_number(number, sequence_location, gene, allele):
     """Test that Relative Copy Number model works correctly."""
-    c = RelativeCopyNumber(subject=gene, relative_copy_class="complete loss")
-    assert c.subject.gene_id == "ncbigene:348"
+    c = RelativeCopyNumber(subject="subject:curie", relative_copy_class="complete loss")
+    assert c.subject == "subject:curie"
     assert c.relative_copy_class == "complete loss"
     assert c.type == "RelativeCopyNumber"
 
@@ -432,13 +392,12 @@ def test_relative_copy_number(number, sequence_location, gene, allele):
     assert c.relative_copy_class == "low-level gain"
 
     invalid_params = [
+        {"subject": gene, "copies": number, "relative_copy_class": "complete loss"},
         {"subject": number, "copies": number},
         {"ID": "ga4gh:id", "subject": gene, "relative_copy_class": "complete loss"},
         {"subject": allele},
         {"subject": "fake:curie", "relative_copy_class": "low-level gain", "extra": 0},
-        {"subject": "fake:curie", "relative_copy_class": "low-level"},
-        {"subject": allele, "relative_copy_class": "partial loss"},
-        {"subject": "fake:curie", "relative_copy_class": "low-level gain"}
+        {"subject": allele, "relative_copy_class": "partial loss"}
     ]
 
     for invalid_param in invalid_params:
@@ -481,55 +440,56 @@ def test_feature(gene):
     assert Feature(__root__=gene)
 
 
-def test_systemic_variation(gene, number):
+def test_systemic_variation(sequence_location, number):
     """Test SystemicVariation class."""
-    c = AbsoluteCopyNumber(subject=gene, copies=number)
+    c = AbsoluteCopyNumber(subject=sequence_location, copies=number)
     assert SystemicVariation(__root__=c)
 
 
-def test_deprecated_objects(caplog, deprecated_allele):
-    """Test that deprecated objects work and log appropriately."""
-    seqstate_deprecated_msg = "SequenceState is deprecated. Use LiteralSequenceExpression instead."  # noqa: E501
-    simpleint_deprecated_msg = "SimpleInterval is deprecated. Use SequenceInterval instead."  # noqa: E501
-    seqstate = SequenceState(**deprecated_allele["state"])
-    assert seqstate.type == "SequenceState"
-    assert seqstate.sequence == "T"
-    assert seqstate_deprecated_msg in caplog.text
+def test_genotype_member(indefinite_range, allele, haplotype, definite_range):
+    """Test GenotypeMember model works correctly"""
+    genotype_member = GenotypeMember(count=indefinite_range, variation=allele)
+    assert genotype_member.count == indefinite_range
+    assert genotype_member.variation == allele
+    assert genotype_member.type == "GenotypeMember"
+
+    genotype_member = GenotypeMember(**{"count": definite_range,
+                                        "variation": haplotype})
+    assert genotype_member.count == definite_range
+    assert genotype_member.variation == haplotype
+    assert genotype_member.type == "GenotypeMember"
 
     invalid_params = [
-        {"sequence": "t"},
-        {"sequence": "T", "type": "Sequence"},
-        {"sequence": "hello,world"}
+        {"count": 1, "variation": allele},
+        {"count": definite_range, "variation": "vrs:digest"}
     ]
     for invalid_param in invalid_params:
         with pytest.raises(pydantic.error_wrappers.ValidationError):
-            SequenceState(**invalid_param)
+            GenotypeMember(**invalid_param)
 
-    simpleint = SimpleInterval(**deprecated_allele["location"]["interval"])
-    assert simpleint.type == "SimpleInterval"
-    assert simpleint.start == 140753335
-    assert simpleint.end == 140753336
-    assert simpleint_deprecated_msg in caplog.text
+
+def test_genotype(number, allele, haplotype, definite_range, indefinite_range):
+    """Test Genotype model works correctly"""
+    genotype_member1 = GenotypeMember(count=number, variation=allele)
+    genotype = Genotype(count=definite_range, members=[genotype_member1])
+    assert genotype.count == definite_range
+    assert len(genotype.members) == 1
+    assert genotype.members[0] == genotype_member1
+    assert genotype.type == "Genotype"
+
+    genotype_member2 = GenotypeMember(count=definite_range, variation=haplotype)
+    genotype = Genotype(**{"count": indefinite_range,
+                           "members": [genotype_member1, genotype_member2]})
+    assert genotype.count == indefinite_range
+    assert len(genotype.members) == 2
+    assert genotype.members[0] == genotype_member1
+    assert genotype.members[1] == genotype_member2
+    assert genotype.type == "Genotype"
 
     invalid_params = [
-        {"start": 2.0, "end": 2},
-        {"start": 2, "end": 2, "type": "CytobandInterval"},
-        {"start": 2, "end": '2'}
+        {"count": number, "members": [genotype_member1, genotype_member1]},
+        {"count": 1, "members": [genotype_member1]}
     ]
     for invalid_param in invalid_params:
         with pytest.raises(pydantic.error_wrappers.ValidationError):
-            SimpleInterval(**invalid_param)
-
-    allele = Allele(**deprecated_allele)
-    assert allele.state.type == "SequenceState"
-    assert allele.state.sequence == "T"
-    assert seqstate_deprecated_msg in caplog.text
-    assert allele.location.interval.type == "SimpleInterval"
-    assert allele.location.interval.start == 140753335
-    assert allele.location.interval.end == 140753336
-    assert simpleint_deprecated_msg in caplog.text
-
-    # should default to non-deprecated option when possible
-    allele = Allele(state={"sequence": "T"},
-                    location=deprecated_allele["location"])
-    assert allele.state.type == "LiteralSequenceExpression"
+            Genotype(**invalid_param)
