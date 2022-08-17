@@ -4,8 +4,9 @@ import pytest
 import pydantic
 
 
-from ga4gh.vrsatile.pydantic.core_models import CURIE, DomainEntity, ExtensibleEntity, \
-    Extension, Entity, RecordMetadata, ValueEntity, Coding, Disease, Phenotype,\
+from ga4gh.vrsatile.pydantic.core_models import CURIE, CombinationTherapeutics, \
+    DomainEntity, ExtensibleEntity, Extension, Entity, RecordMetadata, \
+    SubstituteTherapeutics, Therapeutic, ValueEntity, Coding, Disease, Phenotype, \
     Gene, Condition
 
 
@@ -28,6 +29,18 @@ def record_metadata():
     return RecordMetadata(id="value:id", type="RecordMetadata",
                           is_version_of="version:test", version="1.0.0",
                           label="Test RecordMetadata")
+
+
+@pytest.fixture(scope="module")
+def therapeutic1():
+    """Create test fixture for therapeutic"""
+    return Therapeutic(id="rxcui:282388")
+
+
+@pytest.fixture(scope="module")
+def therapeutic2():
+    """Create test fixture for therapeutic"""
+    return Therapeutic(id="rxcui:1147220")
 
 
 def test_curie():
@@ -258,3 +271,43 @@ def test_condition(phenotype, disease, gene):
     for invalid_param in invalid_params:
         with pytest.raises(pydantic.error_wrappers.ValidationError):
             Condition(**invalid_param)
+
+
+def test_therapeutic(therapeutic1):
+    """Test that Therapeutic model works correctly"""
+
+    def _therapeutic_checks(t):
+        assert t.type == "Therapeutic"
+        assert t.id == "rxcui:282388"
+
+    _therapeutic_checks(therapeutic1)
+
+    therapeutic = Therapeutic(**{"id": "rxcui:282388"})
+    _therapeutic_checks(therapeutic)
+
+    with pytest.raises(pydantic.error_wrappers.ValidationError):
+        Therapeutic(**{"id": "invalid"})
+
+
+def test_combination_therapeutic(therapeutic1, therapeutic2):
+    """Test that Combination Therapeutic model works correctly"""
+    ct = CombinationTherapeutics(members=[therapeutic1, therapeutic2])
+    assert ct.type == "CombinationTherapeutics"
+    assert len(ct.members) == 2
+    assert ct.members[0] == therapeutic1
+    assert ct.members[1] == therapeutic2
+
+    with pytest.raises(pydantic.error_wrappers.ValidationError):
+        CombinationTherapeutics(**{"members": [therapeutic1]})
+
+
+def test_substitute_therapeutic(therapeutic1, therapeutic2):
+    """Test that Substitute Therapeutics model works correctly"""
+    ct = SubstituteTherapeutics(members=[therapeutic1, therapeutic2])
+    assert ct.type == "SubstituteTherapeutics"
+    assert len(ct.members) == 2
+    assert ct.members[0] == therapeutic1
+    assert ct.members[1] == therapeutic2
+
+    with pytest.raises(pydantic.error_wrappers.ValidationError):
+        SubstituteTherapeutics(**{"members": [therapeutic1]})

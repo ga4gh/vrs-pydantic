@@ -51,7 +51,7 @@ class ExtensibleEntity(EntityBaseModel):
     """
 
     label: Optional[StrictStr]
-    extensions: Optional[List[Extension]]
+    extensions: Optional[List[Extension]] = []
 
 
 class Entity(BaseModel):
@@ -130,3 +130,29 @@ class Condition(ValueEntity):
     """A set of phenotype and/or disease concepts that constitute a condition."""
 
     members: List[Union[Disease, Phenotype]] = Field(..., min_items=2)
+
+
+class Therapeutic(DomainEntity):
+    """A treatment, therapy, or drug"""
+
+    type: Literal["Therapeutic"] = "Therapeutic"
+
+
+class TherapeuticsCollection(ValueEntity):
+    """A collection of therapeutics."""
+
+    members: List[Therapeutic] = Field(..., min_items=2)
+
+
+class CombinationTherapeutics(TherapeuticsCollection):
+    """A collection of therapeutics that are taken during a course of treatment."""
+
+    type: Literal["CombinationTherapeutics"] = "CombinationTherapeutics"
+
+
+class SubstituteTherapeutics(TherapeuticsCollection):
+    """A collection of therapeutics that are considered as valid alternative
+    entities.
+    """
+
+    type: Literal["SubstituteTherapeutics"] = "SubstituteTherapeutics"

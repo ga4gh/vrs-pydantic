@@ -1,6 +1,7 @@
 """Define Pydantic Class models for VRS models."""
 from enum import Enum
 from typing import List, Union, Literal
+import re
 
 from pydantic import Field, constr, StrictInt, StrictStr, StrictBool, validator, \
     BaseModel, Extra
@@ -16,7 +17,6 @@ class VRSTypes(str, Enum):
     INDEFINITE_RANGE = "IndefiniteRange"
     DEFINITE_RANGE = "DefiniteRange"
     TEXT = "Text"
-    CYTOBAND_INTERVAL = "CytobandInterval"
     GENE = "Gene"
     CHROMOSOME_LOCATION = "ChromosomeLocation"
     SEQUENCE_LOCATION = "SequenceLocation"
@@ -58,9 +58,9 @@ class RelativeCopyClass(str, Enum):
 
 
 class HumanCytoband(BaseModelForbidExtra):
-    """A interval on a stained metaphase chromosome specified by cytobands.
-    CytobandIntervals include the regions described by the start and end
-    cytobands.
+    """A character string representing cytobands derived from the *International System
+    for Human Cytogenomic Nomenclature* (ISCN)
+    [guidelines](http://doi.org/10.1159/isbn.978-3-318-06861-0).
     """
 
     __root__: constr(regex=r"^cen|[pq](ter|([1-9][0-9]*(\.[1-9][0-9]*)?))$") \
@@ -118,27 +118,9 @@ class DefiniteRange(BaseModelForbidExtra):
     min: StrictInt
     max: StrictInt
 
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Intervals
-
-
-class CytobandInterval(BaseModelForbidExtra):
-    """A contiguous span on a chromosome defined by cytoband features. The span includes
-    the constituent regions described by the start and end cytobands, as well as any
-    intervening regions.
-    """
-
-    type: Literal[VRSTypes.CYTOBAND_INTERVAL] = VRSTypes.CYTOBAND_INTERVAL
-    start: HumanCytoband
-    end: HumanCytoband
-
-    _get_start_val = validator('start', allow_reuse=True)(return_value)
-    _get_end_val = validator('end', allow_reuse=True)(return_value)
-
-
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Locations
+
 
 class ChromosomeLocation(ValueEntity):
     """A Location on a chromosome defined by a species and chromosome name."""
@@ -146,10 +128,19 @@ class ChromosomeLocation(ValueEntity):
     type: Literal[VRSTypes.CHROMOSOME_LOCATION] = VRSTypes.CHROMOSOME_LOCATION
     species_id: CURIE
     chr: StrictStr
-    interval: CytobandInterval
+    start: HumanCytoband
+    end: HumanCytoband
 
-    # TODO: Validator for chromosome (1..22, X, Y, case-sensitive)
-    _get_species_id_val = validator('species_id', allow_reuse=True)(return_value)
+    _get_start_val = validator("start", allow_reuse=True)(return_value)
+    _get_end_val = validator("end", allow_reuse=True)(return_value)
+    _get_species_id_val = validator("species_id", allow_reuse=True)(return_value)
+
+    @validator("chr")
+    def check_chr_value(cls, v):
+        """Check chr value"""
+        msg = "`chr` must be 1..22, X, or Y (case-sensitive)"
+        assert re.match(r"^(X|Y|([1-9]|1[0-9]|2[0-2]))$", v), msg
+        return v
 
     class Config:
         """Class configs."""
@@ -160,7 +151,7 @@ class ChromosomeLocation(ValueEntity):
 class SequenceLocation(ValueEntity):
     """A :ref:`Location` defined by an interval on a referenced :ref:`Sequence`."""
 
-    type: Literal[VRSTypes.SEQUENCE_LOCATION] = "SequenceLocation"
+    type: Literal[VRSTypes.SEQUENCE_LOCATION] = VRSTypes.SEQUENCE_LOCATION
     sequence_id: CURIE
     start: Union[Number, IndefiniteRange, DefiniteRange]
     end: Union[Number, IndefiniteRange, DefiniteRange]
@@ -233,7 +224,8 @@ class ComposedSequenceExpression(BaseModelForbidExtra):
     nested composed sequence expressions.
     """
 
-    type: Literal[VRSTypes.COMPOSED_SEQUENCE_EXPRESSION] = "ComposedSequenceExpression"
+    type: Literal[VRSTypes.COMPOSED_SEQUENCE_EXPRESSION] = \
+        VRSTypes.COMPOSED_SEQUENCE_EXPRESSION
     components: List[Union[LiteralSequenceExpression, RepeatedSequenceExpression,
                      DerivedSequenceExpression]] = Field(..., min_items=2, unique_items=True)  # noqa: E501
 

@@ -1,10 +1,9 @@
 """Module for pytest config tools."""
 import pytest
 from ga4gh.vrsatile.pydantic.core_models import Disease, Extension, Gene, Phenotype
-from ga4gh.vrsatile.pydantic.vrs_models import CytobandInterval, Haplotype, \
-    RepeatedSequenceExpression, SequenceLocation, DerivedSequenceExpression, Number, \
-    IndefiniteRange, DefiniteRange, Allele, LiteralSequenceExpression, \
-    ChromosomeLocation
+from ga4gh.vrsatile.pydantic.vrs_models import Haplotype, RepeatedSequenceExpression,\
+    SequenceLocation, DerivedSequenceExpression, Number, IndefiniteRange,\
+    DefiniteRange, Allele, LiteralSequenceExpression, ChromosomeLocation
 from ga4gh.vrsatile.pydantic.vrsatile_models import Expression, \
     SequenceDescriptor, LocationDescriptor, GeneDescriptor, VCFRecord
 
@@ -28,19 +27,12 @@ def definite_range():
 
 
 @pytest.fixture(scope="session")
-def cytoband_interval():
-    """Create test fixture for Cytoband Interval."""
-    return CytobandInterval(
-        start="q13.32", end="q13.32"
-    )
-
-
-@pytest.fixture(scope="session")
-def chromosome_location(cytoband_interval):
+def chromosome_location():
     """Create test fixture for Chromosome Location."""
     return ChromosomeLocation(
         chr="19",
-        interval=cytoband_interval,
+        start="q13.32",
+        end="q13.32",
         species_id="taxonomy:9606"
     )
 

@@ -189,8 +189,8 @@ def test_location_descriptor(location_descriptor, sequence_location, gene):
     assert location_descriptor.type == "LocationDescriptor"
     assert location_descriptor.location_id == "gene:a"
     assert location_descriptor.location.chr == "19"
-    assert location_descriptor.location.interval.start == "q13.32"
-    assert location_descriptor.location.interval.end == "q13.32"
+    assert location_descriptor.location.start == "q13.32"
+    assert location_descriptor.location.end == "q13.32"
     assert location_descriptor.location.species_id == "taxonomy:9606"
     assert location_descriptor.location.type == "ChromosomeLocation"
 

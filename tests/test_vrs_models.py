@@ -5,7 +5,7 @@ import pydantic
 
 from ga4gh.vrsatile.pydantic.vrs_models import ComposedSequenceExpression, Genotype,\
     GenotypeMember, Number, Comparator, IndefiniteRange, DefiniteRange, Text, \
-    CytobandInterval, DerivedSequenceExpression, LiteralSequenceExpression, \
+    DerivedSequenceExpression, LiteralSequenceExpression, \
     RepeatedSequenceExpression, SequenceLocation, VariationSet, Haplotype, \
     AbsoluteCopyNumber, Allele, ChromosomeLocation, Feature, SystemicVariation, \
     RelativeCopyNumber
@@ -94,26 +94,6 @@ def test_text():
             Text(**invalid_param)
 
 
-def test_cytoband_interval(cytoband_interval):
-    """Test that Cytoband Interval model works correctly."""
-    human_cytoband = "q13.32"
-    assert cytoband_interval.start == human_cytoband == cytoband_interval.end
-    assert cytoband_interval.type == "CytobandInterval"
-
-    assert CytobandInterval(
-        start="q13.32", end="q13.32", type="CytobandInterval"
-    )
-
-    invalid_params = [
-        {"start": "x9", "end": human_cytoband},
-        {"start": human_cytoband, "end": human_cytoband, "type": "CI"}
-    ]
-
-    for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
-            CytobandInterval(**invalid_param)
-
-
 def test_literal_sequence_expression(literal_sequence_expression):
     """Test that Literal Sequence Expression model works correctly."""
     assert literal_sequence_expression.sequence == "ACGT"
@@ -133,27 +113,39 @@ def test_literal_sequence_expression(literal_sequence_expression):
             LiteralSequenceExpression(**invalid_param)
 
 
-def test_chromosome_location(chromosome_location, cytoband_interval):
+def test_chromosome_location(chromosome_location):
     """Test that Chromosome Location model works correctly."""
     assert chromosome_location.chr == "19"
-    assert chromosome_location.interval.start == chromosome_location.interval.end == "q13.32"  # noqa: E501
+    assert chromosome_location.start == chromosome_location.end == "q13.32"
     assert chromosome_location.type == "ChromosomeLocation"
 
     assert ChromosomeLocation(
-        chr="19",
-        interval=cytoband_interval,
+        chr="X",
+        start="q13.32",
+        end="q13.32",
         species_id="taxonomy:9606",
         type="ChromosomeLocation"
     )
 
     invalid_params = [
         {"chr": "1",
-         "interval": {"start": "q13.32!", "end": "q13.32"},
+         "interval": {"start": "q13.32", "end": "q13.32"},
          "species_id": "taxonomy:9606"
          },
         {"chr": "1",
-         "interval": {"start": "q13.32", "end": "q13.32"},
+         "start": "q13.32",
+         "end": "q13.32",
          "species": "taxonomy:9606"
+         },
+        {"chr": "23",
+         "start": "q13.32",
+         "end": "q13.32",
+         "species_id": "taxonomy:9606",
+         },
+        {"chr": 1,
+         "start": "q13.32",
+         "end": "q13.32",
+         "species_id": "taxonomy:9606",
          }
     ]
 
