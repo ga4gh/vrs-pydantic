@@ -1,10 +1,10 @@
 """Module for pytest config tools."""
 import pytest
-from ga4gh.vrsatile.pydantic.vrs_models import SequenceInterval, \
-    CytobandInterval, SequenceLocation, DerivedSequenceExpression, Number, \
-    IndefiniteRange, DefiniteRange, Allele, LiteralSequenceExpression, Gene, \
-    ChromosomeLocation
-from ga4gh.vrsatile.pydantic.vrsatile_models import Extension, Expression, \
+from ga4gh.vrsatile.pydantic.core_models import Disease, Extension, Gene, Phenotype
+from ga4gh.vrsatile.pydantic.vrs_models import Haplotype, RepeatedSequenceExpression,\
+    SequenceLocation, DerivedSequenceExpression, Number, IndefiniteRange,\
+    DefiniteRange, Allele, LiteralSequenceExpression, ChromosomeLocation
+from ga4gh.vrsatile.pydantic.vrsatile_models import Expression, \
     SequenceDescriptor, LocationDescriptor, GeneDescriptor, VCFRecord
 
 
@@ -27,39 +27,30 @@ def definite_range():
 
 
 @pytest.fixture(scope="session")
-def sequence_interval():
-    """Create test fixture for Sequence Interval."""
-    return SequenceInterval(
+def chromosome_location():
+    """Create test fixture for Chromosome Location."""
+    return ChromosomeLocation(
+        chr="19",
+        start="q13.32",
+        end="q13.32",
+        species_id="taxonomy:9606"
+    )
+
+
+@pytest.fixture(scope="session")
+def sequence_location():
+    """Create test fixture for Sequence Location."""
+    return SequenceLocation(
+        sequence_id="ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl",
         start=Number(value=44908821),
         end=Number(value=44908822)
     )
 
 
 @pytest.fixture(scope="session")
-def cytoband_interval():
-    """Create test fixture for Cytoband Interval."""
-    return CytobandInterval(
-        start="q13.32", end="q13.32"
-    )
-
-
-@pytest.fixture(scope="session")
-def chromosome_location(cytoband_interval):
-    """Create test fixture for Chromosome Location."""
-    return ChromosomeLocation(
-        chr="19",
-        interval=cytoband_interval,
-        species_id="taxonomy:9606"
-    )
-
-
-@pytest.fixture(scope="session")
-def sequence_location(sequence_interval):
-    """Create test fixture for Sequence Location."""
-    return SequenceLocation(
-        sequence_id="ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl",
-        interval=sequence_interval
-    )
+def literal_sequence_expression():
+    """Create test fixture for Literal Sequence Expression"""
+    return LiteralSequenceExpression(sequence="ACGT")
 
 
 @pytest.fixture(scope="session")
@@ -72,6 +63,14 @@ def derived_sequence_expression(sequence_location):
 
 
 @pytest.fixture(scope="session")
+def repeated_sequence_expression(derived_sequence_expression, number):
+    """Create test fixture for Repeated Sequence Expression"""
+    return RepeatedSequenceExpression(
+        seq_expr=derived_sequence_expression, count=number
+    )
+
+
+@pytest.fixture(scope="session")
 def allele(sequence_location):
     """Create test fixture for Allele."""
     return Allele(
@@ -80,32 +79,29 @@ def allele(sequence_location):
     )
 
 
-@pytest.fixture(scope="module")
-def deprecated_allele():
-    """Allele object that uses deprecated terms."""
-    return {
-        "_id": "ga4gh:VA.HaPTmn-rrjRoZnIVw1I4AZPa6YHa2ojh",
-        "type": "Allele",
-        "location": {
-            "_id": "ga4gh:VSL.mHP-jIvDKOG6r-mhkhgNNrtHXa2clUSK",
-            "type": "SequenceLocation",
-            "sequence_id": "ga4gh:SQ.F-LrLMe1SRpfUZHkQmvkVKFEGaoDeHul",
-            "interval": {
-                "start": 140753335,
-                "end": 140753336
-            }
-        },
-        "state": {
-            "type": "SequenceState",
-            "sequence": "T"
-        }
-    }
+@pytest.fixture(scope="session")
+def haplotype():
+    """Create test fixture for Haplotype"""
+    return Haplotype(members=["ga4gh:VA.-kUJh47Pu24Y3Wdsk1rXEDKsXWNY-68x",
+                              "ga4gh:VA.Z_rYRxpUvwqCLsCBO3YLl70o2uf9_Op1"])
 
 
 @pytest.fixture(scope="session")
 def gene():
     """Create test fixture for Gene."""
-    return Gene(gene_id="ncbigene:348")
+    return Gene(id="ncbigene:348")
+
+
+@pytest.fixture(scope="module")
+def phenotype():
+    """Create test fixture for Phenotype"""
+    return Phenotype(id="HP:0000002", type="Phenotype")
+
+
+@pytest.fixture(scope="module")
+def disease():
+    """Create test fixture for Disease"""
+    return Disease(id="ncit:C4989", type="Disease")
 
 
 @pytest.fixture(scope="session")
@@ -157,11 +153,8 @@ def braf_v600e_variation():
             "id": "ga4gh:VSL.AqrQ-EkAvTrXOFn70_8i3dXF5shBBZ5i",
             "type": "SequenceLocation",
             "sequence_id": "ga4gh:SQ.WaAJ_cXXn9YpMNfhcq9lnzIvaB9ALawo",
-            "interval": {
-                "type": "SequenceInterval",
-                "start": {"type": "Number", "value": 639},
-                "end": {"type": "Number", "value": 640}
-            }
+            "start": {"type": "Number", "value": 639},
+            "end": {"type": "Number", "value": 640}
         },
         "state": {"type": "LiteralSequenceExpression", "sequence": "E"}
     }
