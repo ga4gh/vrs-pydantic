@@ -1,13 +1,13 @@
 """Define Pydantic Class models for VRS models."""
-from __future__ import annotations
 from enum import Enum
-from typing import List, Optional, Union, Literal
+from typing import List, Union, Literal
+import re
 
-from pydantic import BaseModel, Extra, Field, constr, StrictInt, StrictStr, \
-    StrictBool, validator
+from pydantic import Field, constr, StrictInt, StrictStr, StrictBool, validator, \
+    BaseModel, Extra
 
-from ga4gh.vrsatile.pydantic import return_value, BaseModelForbidExtra, \
-    BaseModelDeprecated
+from ga4gh.vrsatile.pydantic import return_value, BaseModelForbidExtra
+from ga4gh.vrsatile.pydantic.core_models import CURIE, Gene, ValueEntity
 
 
 class VRSTypes(str, Enum):
@@ -17,33 +17,20 @@ class VRSTypes(str, Enum):
     INDEFINITE_RANGE = "IndefiniteRange"
     DEFINITE_RANGE = "DefiniteRange"
     TEXT = "Text"
-    SEQUENCE_INTERVAL = "SequenceInterval"
-    CYTOBAND_INTERVAL = "CytobandInterval"
-    LITERAL_SEQUENCE_EXPRESSION = "LiteralSequenceExpression"
     GENE = "Gene"
     CHROMOSOME_LOCATION = "ChromosomeLocation"
     SEQUENCE_LOCATION = "SequenceLocation"
+    LITERAL_SEQUENCE_EXPRESSION = "LiteralSequenceExpression"
     DERIVED_SEQUENCE_EXPRESSION = "DerivedSequenceExpression"
     REPEATED_SEQUENCE_EXPRESSION = "RepeatedSequenceExpression"
+    COMPOSED_SEQUENCE_EXPRESSION = "ComposedSequenceExpression"
     ALLELE = "Allele"
     HAPLOTYPE = "Haplotype"
     ABSOLUTE_COPY_NUMBER = "AbsoluteCopyNumber"
     RELATIVE_COPY_NUMBER = "RelativeCopyNumber"
     VARIATION_SET = "VariationSet"
-    SEQUENCE_STATE = "SequenceState"
-    SIMPLE_INTERVAL = "SimpleInterval"
-
-
-class Number(BaseModel):
-    """A simple number value as a VRS class."""
-
-    class Config:
-        """Class configs."""
-
-        extra = Extra.forbid
-
-    type: Literal[VRSTypes.NUMBER] = VRSTypes.NUMBER
-    value: StrictInt
+    GENOTYPE = "Genotype"
+    GENOTYPE_MEMBER = "GenotypeMember"
 
 
 class Comparator(str, Enum):
@@ -63,6 +50,55 @@ class RelativeCopyClass(str, Enum):
     HIGH_LEVEL_GAIN = "high-level gain"
 
 
+# =============================================================================
+# BASIC TYPES (STRUCTURES)
+# These types do NOT have a VRS `type` attribute
+# These types are used solely within other definitions.
+# =============================================================================
+
+
+class HumanCytoband(BaseModelForbidExtra):
+    """A character string representing cytobands derived from the *International System
+    for Human Cytogenomic Nomenclature* (ISCN)
+    [guidelines](http://doi.org/10.1159/isbn.978-3-318-06861-0).
+    """
+
+    __root__: constr(regex=r"^cen|[pq](ter|([1-9][0-9]*(\.[1-9][0-9]*)?))$") \
+        = Field(..., example="q22.3")  # noqa: F722
+
+
+class Residue(BaseModelForbidExtra):
+    """A character representing a specific residue (i.e., molecular species) or
+    groupings of these ("ambiguity codes"), using `one-letter IUPAC abbreviations
+    <https://en.wikipedia.org/wiki/International_Union_of_Pure_and_Applied_Chemistry#Amino_acid_and_nucleotide_base_codes>`
+    for nucleic acids and amino acids.
+    """
+
+    __root__: constr(regex=r"[A-Z*\-]")  # noqa: F722
+
+
+class Sequence(BaseModelForbidExtra):
+    """A character string of :ref:`Residues <Residue>` that represents a biological
+    sequence using the conventional sequence order (5'-to-3' for nucleic acid sequences,
+    and amino-to-carboxyl for amino acid  sequences). IUPAC ambiguity codes are
+    permitted in Sequences.
+    """
+
+    __root__: constr(regex=r"^[A-Z*\-]*$") = Field(..., example="ACTG")  # noqa: F722
+
+
+# =============================================================================
+# Numerics, Comparators, and Ranges
+# =============================================================================
+
+
+class Number(BaseModelForbidExtra):
+    """A simple number value as a VRS class."""
+
+    type: Literal[VRSTypes.NUMBER] = VRSTypes.NUMBER
+    value: StrictInt
+
+
 class IndefiniteRange(BaseModelForbidExtra):
     """An indefinite range represented as a number and associated comparator.
     The bound operator is interpreted as follows: `>=` are all values greater
@@ -75,116 +111,67 @@ class IndefiniteRange(BaseModelForbidExtra):
     comparator: Comparator
 
 
-class DefiniteRange(BaseModel):
+class DefiniteRange(BaseModelForbidExtra):
     """A bounded, inclusive range of numbers."""
+
+    type: Literal[VRSTypes.DEFINITE_RANGE] = VRSTypes.DEFINITE_RANGE
+    min: StrictInt
+    max: StrictInt
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Locations
+
+
+class ChromosomeLocation(ValueEntity):
+    """A Location on a chromosome defined by a species and chromosome name."""
+
+    type: Literal[VRSTypes.CHROMOSOME_LOCATION] = VRSTypes.CHROMOSOME_LOCATION
+    species_id: CURIE
+    chr: StrictStr
+    start: HumanCytoband
+    end: HumanCytoband
+
+    _get_start_val = validator("start", allow_reuse=True)(return_value)
+    _get_end_val = validator("end", allow_reuse=True)(return_value)
+    _get_species_id_val = validator("species_id", allow_reuse=True)(return_value)
+
+    @validator("chr")
+    def check_chr_value(cls, v):
+        """Check chr value"""
+        msg = "`chr` must be 1..22, X, or Y (case-sensitive)"
+        assert re.match(r"^(X|Y|([1-9]|1[0-9]|2[0-2]))$", v), msg
+        return v
 
     class Config:
         """Class configs."""
 
         extra = Extra.forbid
 
-    type: Literal[VRSTypes.DEFINITE_RANGE] = VRSTypes.DEFINITE_RANGE
-    min: StrictInt
-    max: StrictInt
 
+class SequenceLocation(ValueEntity):
+    """A :ref:`Location` defined by an interval on a referenced :ref:`Sequence`."""
 
-class Sequence(BaseModelForbidExtra):
-    """A character string of residues that represents a biological sequence
-    using the conventional sequence order (5’-to-3’ for nucleic acid sequences,
-    and amino-to-carboxyl for amino acid sequences). IUPAC ambiguity codes
-    are permitted in Sequences.
-    """
-
-    __root__: constr(regex=r"^[A-Z*\-]*$") \
-        = Field(..., example="ACTG")  # noqa: F722
-
-
-class CURIE(BaseModelForbidExtra):
-    """A string that refers to an object uniquely.  The lifetime and scope of
-    an id is defined by the sender. VRS does not impose any constraints on
-    strings used as ids in messages. However, to maximize sharability of data,
-    VRS RECOMMENDS that implementations use [W3C Compact URI (CURIE)]
-    (https://www.w3.org/TR/curie/) syntax. String CURIEs are represented as
-    `prefix`:`reference` (W3C terminology), but often referred to as `
-    namespace`:`accession` or `namespace`:`local id` colloquially. VRS also
-    RECOMMENDS that `prefix` be defined in identifiers.org. The `reference`
-    component is an unconstrained string. A CURIE is a URI.  URIs may *locate*
-    objects (i.e., specify where to retrieve them) or *name* objects
-    conceptually.  VRS uses CURIEs primarily as a naming mechanism.
-    Implementations MAY provide CURIE resolution mechanisms for prefixes to
-    make these objects locatable. Using internal ids in public messages is
-    strongly discouraged.
-    """
-
-    __root__: constr(regex=r"^\w[^:]*:.+$") = \
-        Field(..., example="ensembl:ENSG00000139618")  # noqa: F722
-
-
-class HumanCytoband(BaseModelForbidExtra):
-    """A interval on a stained metaphase chromosome specified by cytobands.
-    CytobandIntervals include the regions described by the start and end
-    cytobands.
-    """
-
-    __root__: constr(regex=r"^cen|[pq](ter|([1-9][0-9]*(\.[1-9][0-9]*)?))$") \
-        = Field(..., example="q22.3")  # noqa: F722
-
-
-class Text(BaseModel):
-    """An textual representation of variation intended to capture variation
-    descriptions that cannot be parsed, but still treated as variation.
-    """
-
-    class Config(BaseModelForbidExtra.Config):
-        """Class configs."""
-
-        allow_population_by_field_name = True
-
-    id: Optional[CURIE] = Field(alias='_id')
-    type: Literal[VRSTypes.TEXT] = VRSTypes.TEXT
-    definition: StrictStr
-
-    _get_id_val = validator('id', allow_reuse=True)(return_value)
-
-
-class SequenceInterval(BaseModelForbidExtra):
-    """A SequenceInterval represents a span of sequence. Positions are always
-    represented by contiguous spans using interbase coordinates.
-    SequenceInterval is intended to be compatible with that in Sequence
-    Ontology ([SO:0000001](http://www.sequenceontology.org/browser/
-    current_svn/term/SO:0000001)), with the exception that the GA4GH VRS
-    SequenceInterval may be zero-width. The SO definition is for an extent
-    greater than zero.
-    """
-
-    type: Literal[VRSTypes.SEQUENCE_INTERVAL] = VRSTypes.SEQUENCE_INTERVAL
+    type: Literal[VRSTypes.SEQUENCE_LOCATION] = VRSTypes.SEQUENCE_LOCATION
+    sequence_id: CURIE
     start: Union[Number, IndefiniteRange, DefiniteRange]
     end: Union[Number, IndefiniteRange, DefiniteRange]
 
+    _get_sequence_id_val = validator('sequence_id', allow_reuse=True)(return_value)
 
-class SimpleInterval(BaseModelForbidExtra, BaseModelDeprecated):
-    """DEPRECATED: A SimpleInterval represents a span of sequence. Positions
-    are always represented by contiguous spans using interbase coordinates.
-    This class is deprecated. Use SequenceInterval instead.
-    """
+    class Config:
+        """Class configs."""
 
-    type: Literal[VRSTypes.SIMPLE_INTERVAL] = VRSTypes.SIMPLE_INTERVAL
-    start: StrictInt
-    end: StrictInt
-
-    _replace_with = "SequenceInterval"
+        extra = Extra.forbid
 
 
-class CytobandInterval(BaseModelForbidExtra):
-    """A contiguous region specified by chromosomal bands features."""
+class Location(BaseModel):
+    """A contiguous segment of a biological sequence."""
 
-    type: Literal[VRSTypes.CYTOBAND_INTERVAL] = VRSTypes.CYTOBAND_INTERVAL
-    start: HumanCytoband
-    end: HumanCytoband
+    __root__: Union[ChromosomeLocation, SequenceLocation]
 
-    _get_start_val = validator('start', allow_reuse=True)(return_value)
-    _get_end_val = validator('end', allow_reuse=True)(return_value)
 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# SequenceExpression
 
 class LiteralSequenceExpression(BaseModelForbidExtra):
     """An explicit expression of a Sequence."""
@@ -196,77 +183,12 @@ class LiteralSequenceExpression(BaseModelForbidExtra):
     _get_sequence_val = validator('sequence', allow_reuse=True)(return_value)
 
 
-class SequenceState(BaseModelForbidExtra, BaseModelDeprecated):
-    """DEPRECATED. A Sequence as a State. This is the State class to use for
-    representing "ref-alt" style variation, including SNVs, MNVs, del, ins, and
-    delins.
-    This class is deprecated. Use LiteralSequenceExpression instead.
-    """
-
-    type: Literal[VRSTypes.SEQUENCE_STATE] = VRSTypes.SEQUENCE_STATE
-    sequence: Sequence
-
-    _replace_with = "LiteralSequenceExpression"
-
-    _get_sequence_val = validator("sequence", allow_reuse=True)(return_value)
-
-
-class Gene(BaseModelForbidExtra):
-    """A gene is an authoritative representation of one or more heritable
-    :ref:`Locations <Location>` that includes all sequence elements necessary
-    to perform a biological function. A gene may include regulatory,
-    transcribed, and/or other functional Locations.
-    """
-
-    type: Literal[VRSTypes.GENE] = VRSTypes.GENE
-    gene_id: CURIE
-
-    _get_gene_id_val = validator('gene_id', allow_reuse=True)(return_value)
-
-
-class ChromosomeLocation(BaseModel):
-    """A Location on a chromosome defined by a species and chromosome name."""
-
-    class Config(BaseModelForbidExtra.Config):
-        """Class configs."""
-
-        allow_population_by_field_name = True
-
-    type: Literal[VRSTypes.CHROMOSOME_LOCATION] = VRSTypes.CHROMOSOME_LOCATION
-    id: Optional[CURIE] = Field(alias='_id')
-    species_id: CURIE
-    chr: StrictStr
-    interval: CytobandInterval
-
-    _get_id_val = validator('id', allow_reuse=True)(return_value)
-    _get_species_id_val = \
-        validator('species_id', allow_reuse=True)(return_value)
-
-
-class SequenceLocation(BaseModel):
-    """A Location defined by an interval on a referenced Sequence."""
-
-    class Config(BaseModelForbidExtra.Config):
-        """Class configs."""
-
-        allow_population_by_field_name = True
-
-    id: Optional[CURIE] = Field(alias='_id')
-    type: Literal[VRSTypes.SEQUENCE_LOCATION] = VRSTypes.SEQUENCE_LOCATION
-    sequence_id: CURIE
-    interval: Union[SequenceInterval, SimpleInterval]
-
-    _get_id_val = validator('id', allow_reuse=True)(return_value)
-    _get_sequence_id_val = \
-        validator('sequence_id', allow_reuse=True)(return_value)
-
-
 class DerivedSequenceExpression(BaseModelForbidExtra):
-    """An approximate expression of a sequence that is derived from a
-    referenced sequence location. Use of DerivedSequenceExpression indicates
-    that the derived sequence is approximately equivalent to the reference
-    indicated, and is typically used for describing large regions in contexts
-    where the precision of a literal sequence is unnecessary.
+    """An approximate expression of a sequence that is derived from a referenced
+    sequence location. Use of this class indicates that the derived sequence is
+    *approximately equivalent* to the reference indicated, and is typically used for
+    describing large regions in contexts where the use of an approximate sequence is
+    inconsequential.
     """
 
     type: Literal[VRSTypes.DERIVED_SEQUENCE_EXPRESSION] = \
@@ -285,8 +207,41 @@ class RepeatedSequenceExpression(BaseModelForbidExtra):
     seq_expr: Union[LiteralSequenceExpression, DerivedSequenceExpression]
     count: Union[Number, IndefiniteRange, DefiniteRange]
 
+    @validator("count")
+    def check_count_value(cls, v):
+        """Check count value"""
+        if v.type in {VRSTypes.NUMBER, VRSTypes.INDEFINITE_RANGE}:
+            assert v.value >= 0, "`count.value` minimum is 0"
+        elif v.type == VRSTypes.DEFINITE_RANGE:
+            assert v.min >= 0 and v.max >= 0, "`count.min` and `count.max` minimum is 0"  # noqa: E501
+        return v
 
-class Feature(BaseModel):
+
+class ComposedSequenceExpression(BaseModelForbidExtra):
+    """An expression of a sequence composed from multiple other
+    :ref:`Sequence Expressions<SequenceExpression>` objects. MUST have at least one
+    component that is not a ref:`LiteralSequenceExpression`. CANNOT be composed from
+    nested composed sequence expressions.
+    """
+
+    type: Literal[VRSTypes.COMPOSED_SEQUENCE_EXPRESSION] = \
+        VRSTypes.COMPOSED_SEQUENCE_EXPRESSION
+    components: List[Union[LiteralSequenceExpression, RepeatedSequenceExpression,
+                     DerivedSequenceExpression]] = Field(..., min_items=2, unique_items=True)  # noqa: E501
+
+
+class SequenceExpression(BaseModel):
+    """One of a set of sequence representation syntaxes."""
+
+    __root__: Union[LiteralSequenceExpression, DerivedSequenceExpression,
+                    RepeatedSequenceExpression, ComposedSequenceExpression]
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Feature
+
+
+class Feature(BaseModelForbidExtra):
     """A named entity that can be mapped to a Location. Genes, protein domains,
     exons, and chromosomes are some examples of common biological entities
     that may be Features.
@@ -304,99 +259,123 @@ class Feature(BaseModel):
             schema["anyOf"] = [{"$ref": "#/components/schemas/Gene"}]
 
 
-class Location(BaseModel):
-    """A contiguous segment of a biological sequence."""
-
-    __root__: Union[ChromosomeLocation, SequenceLocation]
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Molecular Variation
 
 
-class SequenceExpression(BaseModel):
-    """One of a set of sequence representation syntaxes."""
+class Allele(ValueEntity):
+    """The state of a molecule at a :ref:`Location`."""
 
-    __root__: Union[
-        LiteralSequenceExpression,
-        DerivedSequenceExpression,
-        RepeatedSequenceExpression
-    ]
-
-
-class Allele(BaseModel):
-    """The sequence state at a Location."""
-
-    class Config(BaseModelForbidExtra.Config):
-        """Class configs."""
-
-        allow_population_by_field_name = True
-
-    id: Optional[CURIE] = Field(alias='_id')
     type: Literal[VRSTypes.ALLELE] = VRSTypes.ALLELE
     location: Union[CURIE, Location]
-    state: Union[SequenceExpression, SequenceState]
+    state: SequenceExpression
 
-    _get_id_val = validator('id', allow_reuse=True)(return_value)
     _get_loc_val = validator('location', allow_reuse=True)(return_value)
     _get_state_val = validator('state', allow_reuse=True)(return_value)
 
-
-class Haplotype(BaseModel):
-    """A set of non-overlapping Alleles that co-occur on the same molecule."""
-
-    class Config(BaseModelForbidExtra.Config):
+    class Config:
         """Class configs."""
 
-        allow_population_by_field_name = True
+        extra = Extra.forbid
 
-    id: Optional[CURIE] = Field(alias='_id')
+
+class Haplotype(ValueEntity):
+    """A set of non-overlapping :ref:`Allele` members that co-occur on the same
+    molecule.
+    """
+
     type: Literal[VRSTypes.HAPLOTYPE] = VRSTypes.HAPLOTYPE
-    members: List[Union[Allele, CURIE]] = Field(..., min_items=1)
+    members: List[Union[Allele, CURIE]] = Field(..., min_items=2, unique_items=True)
 
-    _get_id_val = validator('id', allow_reuse=True)(return_value)
+    class Config:
+        """Class configs."""
+
+        extra = Extra.forbid
 
 
 class MolecularVariation(BaseModel):
-    """A variation on a contiguous molecule."""
+    """A :ref:`variation` on a contiguous molecule."""
 
     __root__: Union[Allele, Haplotype]
 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# SystemicVariation
 
-class AbsoluteCopyNumber(BaseModel):
+
+class CopyNumberBaseModel(ValueEntity):
+    """Base model for Copy Number"""
+
+    subject: Union[SequenceLocation, CURIE]
+
+
+class AbsoluteCopyNumber(CopyNumberBaseModel):
     """The absolute count of discrete copies of a MolecularVariation, Feature,
     SequenceExpression, or a CURIE reference within a system
     (e.g. genome, cell, etc.).
     """
 
-    class Config(BaseModelForbidExtra.Config):
-        """Class configs."""
-
-        allow_population_by_field_name = True
-
-    id: Optional[CURIE] = Field(alias='_id')
     type: Literal[VRSTypes.ABSOLUTE_COPY_NUMBER] = VRSTypes.ABSOLUTE_COPY_NUMBER
-    subject: Union[SequenceLocation, Feature]
+    subject: Union[SequenceLocation, CURIE]
     copies: Union[Number, IndefiniteRange, DefiniteRange]
 
-    _get_id_val = validator('id', allow_reuse=True)(return_value)
     _get_subject_val = validator('subject', allow_reuse=True)(return_value)
 
+    class Config:
+        """Class configs."""
 
-class RelativeCopyNumber(BaseModel):
+        extra = Extra.forbid
+
+
+class RelativeCopyNumber(CopyNumberBaseModel):
     """The relative copies of a MolecularVariation, Feature, SequenceExpression,
     or a CURIE reference against an unspecified baseline in a system
     (e.g. genome, cell, etc.).
     """
 
-    class Config(BaseModelForbidExtra.Config):
-        """Class configs."""
-
-        allow_population_by_field_name = True
-
-    id: Optional[CURIE] = Field(alias='_id')
     type: Literal[VRSTypes.RELATIVE_COPY_NUMBER] = VRSTypes.RELATIVE_COPY_NUMBER
-    subject: Union[SequenceLocation, Feature]
+    subject: Union[SequenceLocation, CURIE]
     relative_copy_class: RelativeCopyClass
 
-    _get_id_val = validator('id', allow_reuse=True)(return_value)
     _get_subject_val = validator('subject', allow_reuse=True)(return_value)
+
+    class Config:
+        """Class configs."""
+
+        extra = Extra.forbid
+
+
+class CopyNumber(BaseModel):
+    """A measure of the copies of a :ref:`Location` within a system (e.g. a genome)"""
+
+    __root__: Union[AbsoluteCopyNumber, RelativeCopyNumber]
+
+
+class GenotypeMember(BaseModelForbidExtra):
+    """A class describing a :ref:`Genotype` `member`."""
+
+    type: Literal[VRSTypes.GENOTYPE_MEMBER] = VRSTypes.GENOTYPE_MEMBER
+    count: Union[Number, IndefiniteRange, DefiniteRange]
+    variation: Union[Allele, Haplotype]
+
+    class Config:
+        """Class configs."""
+
+        extra = Extra.forbid
+
+
+class Genotype(ValueEntity):
+    """A set of trans-phased :ref:`MolecularVariation` members, with associated
+    copy counts, across a specified number of genomic locus `copies`.
+    """
+
+    type: Literal[VRSTypes.GENOTYPE] = VRSTypes.GENOTYPE
+    members: List[GenotypeMember] = Field(..., min_items=1, unique_items=True)
+    count: Union[Number, IndefiniteRange, DefiniteRange]
+
+    class Config:
+        """Class configs."""
+
+        extra = Extra.forbid
 
 
 class SystemicVariation(BaseModel):
@@ -404,39 +383,57 @@ class SystemicVariation(BaseModel):
     e.g. a genome, sample, or homologous chromosomes.
     """
 
-    __root__: Union[AbsoluteCopyNumber, RelativeCopyNumber]
+    __root__: Union[AbsoluteCopyNumber, RelativeCopyNumber, Genotype]
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# UtilityVariation
+
+
+class Text(ValueEntity):
+    """An textual representation of variation intended to capture variation
+    descriptions that cannot be parsed, but still treated as variation.
+    """
+
+    type: Literal[VRSTypes.TEXT] = VRSTypes.TEXT
+    definition: StrictStr
+
+    class Config:
+        """Class configs."""
+
+        extra = Extra.forbid
+
+
+class VariationSet(ValueEntity):
+    """An unconstrained set of Variation members."""
+
+    type: Literal[VRSTypes.VARIATION_SET] = VRSTypes.VARIATION_SET
+    # TODO: See if we can get Variation to work as the union
+    members: List[Union[CURIE, MolecularVariation, SystemicVariation,
+                        Text]] = Field(..., unique_items=True)
+
+    _get_members_val = validator('members', allow_reuse=True)(return_value)
+
+    class Config:
+        """Class configs."""
+
+        extra = Extra.forbid
+
+
+class UtilityVariation(BaseModel):
+    """A collection of :ref:`Variation` subclasses that cannot be constrained to a
+    specific class of biological variation, but are necessary for some applications of
+    VRS.
+    """
+
+    __root__: Union[Text, VariationSet]
+
+
+# =============================================================================
+# Kinds of Variation
+# =============================================================================
 
 
 class Variation(BaseModel):
     """A representation of the state of one or more biomolecules."""
 
     __root__: Union[MolecularVariation, SystemicVariation, UtilityVariation]
-
-
-class UtilityVariation(BaseModel):
-    """A collection of :ref:`Variation` subclasses that cannot be constrained
-    to a specific class of biological variation, but are necessary for some
-    applications of VRS.
-    """
-
-    __root__: Union[Text, VariationSet]
-
-
-class VariationSet(BaseModel):
-    """An unconstrained set of Variation members."""
-
-    class Config(BaseModelForbidExtra.Config):
-        """Class configs."""
-
-        allow_population_by_field_name = True
-
-    id: Optional[CURIE] = Field(alias='_id')
-    type: Literal[VRSTypes.VARIATION_SET] = VRSTypes.VARIATION_SET
-    members: List[Union[CURIE, Variation]]
-
-    _get_id_val = validator('id', allow_reuse=True)(return_value)
-    _get_members_val = validator('members', allow_reuse=True)(return_value)
-
-
-Variation.update_forward_refs()
-UtilityVariation.update_forward_refs()

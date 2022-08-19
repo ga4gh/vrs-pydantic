@@ -2,10 +2,10 @@
 import logging
 from abc import ABC
 
-from pydantic import BaseModel, Extra, root_validator
+from pydantic import BaseModel, Extra
 
 
-logger = logging.getLogger("vrsatile-pydantic")
+logger = logging.getLogger("ga4gh.vrsatile.pydantic")
 
 
 class BaseModelForbidExtra(BaseModel, ABC):
@@ -17,20 +17,6 @@ class BaseModelForbidExtra(BaseModel, ABC):
         extra = Extra.forbid
 
 
-class BaseModelDeprecated(BaseModel, ABC):
-    """Base Pydantic model class to use for deprecated classes."""
-
-    @root_validator(pre=True)
-    def log_deprecated_warning(cls, values):
-        """Log warning that object class is deprecated."""
-        if hasattr(cls, "_replace_with"):
-            logger.warning(f"{cls.__name__} is deprecated. "
-                           f"Use {cls._replace_with} instead.")
-        else:
-            logger.warning(f"{cls.__name__} is deprecated.")
-        return values
-
-
 def return_value(cls, v):
     """Return value from object.
 
@@ -40,7 +26,9 @@ def return_value(cls, v):
     """
     if v is not None:
         try:
-            if isinstance(v, list):
+            if hasattr(v, "__root__"):
+                v = return_value(cls, v.__root__)
+            elif isinstance(v, list):
                 tmp = list()
                 for item in v:
                     while True:
@@ -50,8 +38,6 @@ def return_value(cls, v):
                             break
                     tmp.append(item)
                 v = tmp
-            else:
-                v = v.__root__
         except AttributeError:
             pass
     return v
