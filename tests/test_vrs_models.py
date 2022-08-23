@@ -349,21 +349,25 @@ def test_haplotype(allele, haplotype):
             Haplotype(**invalid_param)
 
 
-def test_absolute_copy_number(number, definite_range, gene, allele, sequence_location):
+def test_absolute_copy_number(number, definite_range, gene, allele, sequence_location,
+                              chromosome_location):
     """Test that Absolute Copy Number model works correctly."""
-    c = AbsoluteCopyNumber(subject="subject:curie", copies=number)
-    assert c.subject == "subject:curie"
+    c = AbsoluteCopyNumber(location="location:curie", copies=number)
+    assert c.location == "location:curie"
     assert c.copies.value == 3
     assert c.type == "AbsoluteCopyNumber"
 
-    c = AbsoluteCopyNumber(subject=sequence_location, copies=number)
-    assert c.subject.type == "SequenceLocation"
+    c = AbsoluteCopyNumber(location=sequence_location, copies=number)
+    assert c.location.type == "SequenceLocation"
+
+    c = AbsoluteCopyNumber(location=chromosome_location, copies=number)
+    assert c.location.type == "ChromosomeLocation"
 
     invalid_params = [
-        {"subjects": number, "copies": number},
-        {"ID": "ga4gh:id", "subject": gene, "copies": number},
-        {"subject": [allele], "copies": number},
-        {"subject": gene, "copies": definite_range}
+        {"locations": number, "copies": number},
+        {"ID": "ga4gh:id", "location": gene, "copies": number},
+        {"location": [allele], "copies": number},
+        {"location": gene, "copies": definite_range}
     ]
 
     for invalid_param in invalid_params:
@@ -371,25 +375,32 @@ def test_absolute_copy_number(number, definite_range, gene, allele, sequence_loc
             AbsoluteCopyNumber(**invalid_param)
 
 
-def test_relative_copy_number(number, sequence_location, gene, allele):
+def test_relative_copy_number(number, sequence_location, gene, allele,
+                              chromosome_location):
     """Test that Relative Copy Number model works correctly."""
-    c = RelativeCopyNumber(subject="subject:curie", relative_copy_class="complete loss")
-    assert c.subject == "subject:curie"
+    c = RelativeCopyNumber(location="location:curie",
+                           relative_copy_class="complete loss")
+    assert c.location == "location:curie"
     assert c.relative_copy_class == "complete loss"
     assert c.type == "RelativeCopyNumber"
 
-    c = RelativeCopyNumber(subject=sequence_location,
+    c = RelativeCopyNumber(location=sequence_location,
                            relative_copy_class="low-level gain")
-    assert c.subject.type == "SequenceLocation"
+    assert c.location.type == "SequenceLocation"
     assert c.relative_copy_class == "low-level gain"
 
+    c = RelativeCopyNumber(location=chromosome_location,
+                           relative_copy_class="copy neutral")
+    assert c.location.type == "ChromosomeLocation"
+    assert c.relative_copy_class == "copy neutral"
+
     invalid_params = [
-        {"subject": gene, "copies": number, "relative_copy_class": "complete loss"},
-        {"subject": number, "copies": number},
-        {"ID": "ga4gh:id", "subject": gene, "relative_copy_class": "complete loss"},
-        {"subject": allele},
-        {"subject": "fake:curie", "relative_copy_class": "low-level gain", "extra": 0},
-        {"subject": allele, "relative_copy_class": "partial loss"}
+        {"location": gene, "copies": number, "relative_copy_class": "complete loss"},
+        {"location": number, "copies": number},
+        {"ID": "ga4gh:id", "location": gene, "relative_copy_class": "complete loss"},
+        {"location": allele},
+        {"location": "fake:curie", "relative_copy_class": "low-level gain", "extra": 0},
+        {"location": allele, "relative_copy_class": "partial loss"}
     ]
 
     for invalid_param in invalid_params:
@@ -434,7 +445,7 @@ def test_feature(gene):
 
 def test_systemic_variation(sequence_location, number):
     """Test SystemicVariation class."""
-    c = AbsoluteCopyNumber(subject=sequence_location, copies=number)
+    c = AbsoluteCopyNumber(location=sequence_location, copies=number)
     assert SystemicVariation(__root__=c)
 
 
