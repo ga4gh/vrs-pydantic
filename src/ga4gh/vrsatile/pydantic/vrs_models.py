@@ -305,7 +305,8 @@ class MolecularVariation(BaseModel):
 class CopyNumberBaseModel(ValueEntity):
     """Base model for Copy Number"""
 
-    subject: Union[SequenceLocation, CURIE]
+    location: Union[Location, CURIE]
+    get_location_val = validator('location', allow_reuse=True)(return_value)
 
 
 class AbsoluteCopyNumber(CopyNumberBaseModel):
@@ -315,10 +316,7 @@ class AbsoluteCopyNumber(CopyNumberBaseModel):
     """
 
     type: Literal[VRSTypes.ABSOLUTE_COPY_NUMBER] = VRSTypes.ABSOLUTE_COPY_NUMBER
-    subject: Union[SequenceLocation, CURIE]
     copies: Union[Number, IndefiniteRange, DefiniteRange]
-
-    _get_subject_val = validator('subject', allow_reuse=True)(return_value)
 
     class Config:
         """Class configs."""
@@ -333,10 +331,7 @@ class RelativeCopyNumber(CopyNumberBaseModel):
     """
 
     type: Literal[VRSTypes.RELATIVE_COPY_NUMBER] = VRSTypes.RELATIVE_COPY_NUMBER
-    subject: Union[SequenceLocation, CURIE]
     relative_copy_class: RelativeCopyClass
-
-    _get_subject_val = validator('subject', allow_reuse=True)(return_value)
 
     class Config:
         """Class configs."""
