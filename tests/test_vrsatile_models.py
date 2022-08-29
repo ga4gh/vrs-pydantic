@@ -7,10 +7,11 @@ from ga4gh.vrsatile.pydantic.vrs_models import Number, SequenceLocation, \
     LiteralSequenceExpression, Allele, Sequence
 from ga4gh.vrsatile.pydantic.vrsatile_models import  \
     CanonicalVariationDescriptor, ConditionDescriptor, DiseaseDescriptor, \
-    MoleculeContext, Expression, PhenotypeDescriptor, ValueObjectDescriptor, \
-    SequenceDescriptor, LocationDescriptor, GeneDescriptor, \
-    VariationDescriptor, VCFRecord, CanonicalVariation, ComplexVariation, \
-    ComplexVariationOperator, CategoricalVariationDescriptor, VariationMember
+    MoleculeContext, Expression, PhenotypeDescriptor, TherapeuticCollectionDescriptor, \
+    TherapeuticDescriptor, ValueObjectDescriptor, SequenceDescriptor, \
+    LocationDescriptor, GeneDescriptor, VariationDescriptor, VCFRecord, \
+    CanonicalVariation, ComplexVariation, ComplexVariationOperator, \
+    CategoricalVariationDescriptor, VariationMember
 
 
 @pytest.fixture(scope="module")
@@ -586,3 +587,58 @@ def test_canonical_variation_descriptor(allele):
     for invalid_param in invalid_params:
         with pytest.raises(pydantic.error_wrappers.ValidationError):
             CanonicalVariationDescriptor(**invalid_param)
+
+
+def test_therapeutic_descriptor(therapeutic1, disease):
+    """Test that Therapeutic Descriptor model works correctly"""
+    td = TherapeuticDescriptor(therapeutic=therapeutic1, label="imatinib")
+    assert td.type == "TherapeuticDescriptor"
+    assert td.therapeutic.id == "rxcui:282388"
+    assert td.therapeutic.type == "Therapeutic"
+    assert td.label == "imatinib"
+
+    td = TherapeuticDescriptor(**{"therapeutic_id": "rxcui:282388"})
+    assert td.type == "TherapeuticDescriptor"
+    assert td.therapeutic_id == "rxcui:282388"
+
+    invalid_params = [
+        {"therapy_id": "rxcui:282388"},
+        {"therapeutic": disease}
+    ]
+    for invalid_param in invalid_params:
+        with pytest.raises(pydantic.error_wrappers.ValidationError):
+            TherapeuticDescriptor(**invalid_param)
+
+
+def test_therapeutic_collection_descriptor(combination_therapeutic_collection,
+                                           substitute_therapeutic_collection):
+    """Test that Therapeutic Collection Descriptor model works correctly"""
+    tcd = TherapeuticCollectionDescriptor(
+        therapeutic_collection=combination_therapeutic_collection)
+    assert tcd.type == "TherapeuticsCollectionDescriptor"
+    assert tcd.therapeutic_collection == combination_therapeutic_collection
+    assert tcd.member_descriptors == list()
+
+    tcd = TherapeuticCollectionDescriptor(**{
+        "therapeutic_collection": substitute_therapeutic_collection,
+        "therapeutic_collection_id": "therapeutic_collection_descriptor:1",
+        "member_descriptors": [
+            TherapeuticDescriptor(therapeutic_id="rxcui:282388"),
+            TherapeuticDescriptor(therapeutic_id="rxcui:1147220"),
+        ]
+    })
+    assert tcd.type == "TherapeuticsCollectionDescriptor"
+    assert tcd.therapeutic_collection == substitute_therapeutic_collection
+    assert tcd.therapeutic_collection_id == "therapeutic_collection_descriptor:1"
+    assert len(tcd.member_descriptors) == 2
+    assert tcd.member_descriptors[0].type == "TherapeuticDescriptor"
+    assert tcd.member_descriptors[0].therapeutic_id == "rxcui:282388"
+    assert tcd.member_descriptors[1].type == "TherapeuticDescriptor"
+    assert tcd.member_descriptors[1].therapeutic_id == "rxcui:1147220"
+
+    invalid_params = [
+        {"therapeutic_collection_id": "invalid"}
+    ]
+    for invalid_param in invalid_params:
+        with pytest.raises(pydantic.error_wrappers.ValidationError):
+            TherapeuticCollectionDescriptor(**invalid_param)

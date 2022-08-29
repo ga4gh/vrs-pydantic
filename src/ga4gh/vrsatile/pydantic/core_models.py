@@ -138,19 +138,19 @@ class Therapeutic(DomainEntity):
     type: Literal["Therapeutic"] = "Therapeutic"
 
 
-class TherapeuticsCollection(ValueEntity):
+class TherapeuticCollection(ValueEntity):
     """A collection of therapeutics."""
 
     members: List[Therapeutic] = Field(..., min_items=2)
 
 
-class CombinationTherapeutics(TherapeuticsCollection):
+class CombinationTherapeuticCollection(TherapeuticCollection):
     """A collection of therapeutics that are taken during a course of treatment."""
 
     type: Literal["CombinationTherapeutics"] = "CombinationTherapeutics"
 
 
-class SubstituteTherapeutics(TherapeuticsCollection):
+class SubstituteTherapeuticCollection(TherapeuticCollection):
     """A collection of therapeutics that are considered as valid alternative
     entities.
     """

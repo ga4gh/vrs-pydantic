@@ -6,8 +6,9 @@ from pydantic import StrictInt, StrictStr, root_validator, validator, Field, \
     BaseModel, Extra
 
 from ga4gh.vrsatile.pydantic import return_value, BaseModelForbidExtra
-from ga4gh.vrsatile.pydantic.core_models import CURIE, Condition, Disease, \
-    ExtensibleEntity, Phenotype, ValueEntity
+from ga4gh.vrsatile.pydantic.core_models import CURIE, Therapeutic, ValueEntity, \
+    CombinationTherapeuticCollection, Condition, Disease, ExtensibleEntity, Phenotype, \
+    SubstituteTherapeuticCollection
 from ga4gh.vrsatile.pydantic.vrs_models import Variation, SequenceLocation, \
     ChromosomeLocation, Sequence, Gene
 
@@ -24,6 +25,8 @@ class VODClassName(str, Enum):
     DISEASE_DESCRIPTOR = "DiseaseDescriptor"
     PHENOTYPE_DESCRIPTOR = "PhenotypeDescriptor"
     CANONICAL_VARIATION_DESCRIPTOR = "CanonicalVariationDescriptor"
+    THERAPEUTIC_DESCRIPTOR = "TherapeuticDescriptor"
+    THERAPEUTIC_COLLECTION_DESCRIPTOR = "TherapeuticsCollectionDescriptor"
 
 
 class VRSATILETypes(str, Enum):
@@ -357,6 +360,64 @@ class ConditionDescriptor(ValueObjectDescriptorBaseModel):
         """Check that at least one of {`condition`, `condition_id`} is set."""
         msg = 'Must give values for either `condition`, `condition_id`, or both'
         value, value_id = values.get('condition'), values.get('condition_id')
+        assert value or value_id, msg
+        return values
+
+    class Config:
+        """Class configs."""
+
+        extra = Extra.forbid
+
+
+class TherapeuticDescriptor(ValueObjectDescriptorBaseModel):
+    """This descriptor class is used for describing Therapeutic domain entities."""
+
+    type: Literal[VODClassName.THERAPEUTIC_DESCRIPTOR] = \
+        VODClassName.THERAPEUTIC_DESCRIPTOR
+    therapeutic: Optional[Therapeutic]
+    therapeutic_id: Optional[CURIE]
+
+    _get_therapeutic_id_val = validator("therapeutic_id",
+                                        allow_reuse=True)(return_value)
+
+    @root_validator(pre=True)
+    def check_therapeutic_or_therapeutic_id_present(cls, values):
+        """Check that at least one of {`therapeutic`, `therapeutic_id`} is set."""
+        msg = 'Must give values for either `therapeutic`, `therapeutic_id`, or both'
+        value, value_id = values.get("therapeutic"), values.get("therapeutic_id")
+        assert value or value_id, msg
+        return values
+
+    class Config:
+        """Class configs."""
+
+        extra = Extra.forbid
+
+
+class TherapeuticCollectionDescriptor(ValueObjectDescriptorBaseModel):
+    """This descriptor class is used for describing TherapeuticsCollection domain
+    entities.
+    """
+
+    type: Literal[VODClassName.THERAPEUTIC_COLLECTION_DESCRIPTOR] = \
+        VODClassName.THERAPEUTIC_COLLECTION_DESCRIPTOR
+    therapeutic_collection: Optional[Union[CombinationTherapeuticCollection,
+                                           SubstituteTherapeuticCollection]]
+    therapeutic_collection_id: Optional[CURIE]
+    member_descriptors: Optional[List[TherapeuticDescriptor]] = []
+
+    _get_therapeutic_collection_id_val = validator("therapeutic_collection_id",
+                                                   allow_reuse=True)(return_value)
+
+    @root_validator(pre=True)
+    def check_therapeutic_collection_or_therapeutic_collection_id_present(cls, values):
+        """Check that at least one of {`therapeutic_collection`,
+        `therapeutic_collection_id`} is set."
+        """
+        msg = 'Must give values for either `therapeutic_collection`, "\
+            "`therapeutic_collection_id`, or both'
+        value = values.get("therapeutic_collection")
+        value_id = values.get("therapeutic_collection_id")
         assert value or value_id, msg
         return values
 

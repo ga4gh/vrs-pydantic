@@ -1,6 +1,7 @@
 """Module for pytest config tools."""
 import pytest
-from ga4gh.vrsatile.pydantic.core_models import Disease, Extension, Gene, Phenotype
+from ga4gh.vrsatile.pydantic.core_models import CombinationTherapeuticCollection, \
+    Disease, Extension, Gene, Phenotype, SubstituteTherapeuticCollection, Therapeutic
 from ga4gh.vrsatile.pydantic.vrs_models import Haplotype, RepeatedSequenceExpression,\
     SequenceLocation, DerivedSequenceExpression, Number, IndefiniteRange,\
     DefiniteRange, Allele, LiteralSequenceExpression, ChromosomeLocation
@@ -102,6 +103,30 @@ def phenotype():
 def disease():
     """Create test fixture for Disease"""
     return Disease(id="ncit:C4989", type="Disease")
+
+
+@pytest.fixture(scope="session")
+def therapeutic1():
+    """Create test fixture for therapeutic"""
+    return Therapeutic(id="rxcui:282388")
+
+
+@pytest.fixture(scope="session")
+def therapeutic2():
+    """Create test fixture for therapeutic"""
+    return Therapeutic(id="rxcui:1147220")
+
+
+@pytest.fixture(scope="session")
+def combination_therapeutic_collection(therapeutic1, therapeutic2):
+    """Create test fixture for combination therapeutic collection"""
+    return CombinationTherapeuticCollection(members=[therapeutic1, therapeutic2])
+
+
+@pytest.fixture(scope="session")
+def substitute_therapeutic_collection(therapeutic1, therapeutic2):
+    """Create test fixture for substitute therapeutic collection"""
+    return SubstituteTherapeuticCollection(members=[therapeutic1, therapeutic2])
 
 
 @pytest.fixture(scope="session")
