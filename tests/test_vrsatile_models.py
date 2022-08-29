@@ -129,10 +129,10 @@ def test_expression(expression):
 def test_value_object_descriptor(extension, expression, gene):
     """Test that Value Object Descriptor model works correctly."""
     vod = ValueObjectDescriptor(id="value:id", type="VariationDescriptor",
-                                value_id="value:id")
+                                value="value:id")
     assert vod.id == "value:id"
     assert vod.type == "VariationDescriptor"
-    assert vod.value_id == "value:id"
+    assert vod.value == "value:id"
 
     vod = ValueObjectDescriptor(id="value:id", type="VariationDescriptor",
                                 value=gene, label="label", description="description",
@@ -163,7 +163,7 @@ def test_value_object_descriptor(extension, expression, gene):
 def test_sequence_descriptor(sequence_descriptor, gene):
     """Test that Sequence Descriptor model works correctly."""
     assert sequence_descriptor.id == "vod:id"
-    assert sequence_descriptor.sequence_id == "sequence:id"
+    assert sequence_descriptor.sequence == "sequence:id"
     assert sequence_descriptor.type == "SequenceDescriptor"
 
     s = SequenceDescriptor(id=sequence_descriptor.id, sequence="AC",
@@ -173,7 +173,7 @@ def test_sequence_descriptor(sequence_descriptor, gene):
     assert s.type == "SequenceDescriptor"
 
     invalid_params = [
-        {"id": "s:1", "sequence_id": sequence_descriptor.sequence_id,
+        {"id": "s:1", "sequence_id": "test:1",
          "type": "VariationDescriptor"},
         {"id": sequence_descriptor.id},
         {"id": sequence_descriptor.id, "sequence": gene}
@@ -184,30 +184,22 @@ def test_sequence_descriptor(sequence_descriptor, gene):
             SequenceDescriptor(**invalid_param)
 
 
-def test_location_descriptor(location_descriptor, sequence_location, gene):
+def test_location_descriptor(location_descriptor, gene):
     """Test that Location Descriptor model works correctly."""
     assert location_descriptor.id == "vod:id"
     assert location_descriptor.type == "LocationDescriptor"
-    assert location_descriptor.location_id == "gene:a"
     assert location_descriptor.location.chr == "19"
     assert location_descriptor.location.start == "q13.32"
     assert location_descriptor.location.end == "q13.32"
     assert location_descriptor.location.species_id == "taxonomy:9606"
     assert location_descriptor.location.type == "ChromosomeLocation"
 
-    ld = LocationDescriptor(id="vod:id2", location_id="gene:b",
-                            location=sequence_location,
-                            type="LocationDescriptor")
+    ld = LocationDescriptor(id="vod:id2", location="gene:b", type="LocationDescriptor")
     assert ld.id == "vod:id2"
-    assert ld.location_id == "gene:b"
-    assert ld.location.sequence_id == "ga4gh:SQ.IIB53T8CNeJJdUqzn9V_JnRtQadwWCbl"
-    assert ld.location.start.type == "Number" == ld.location.end.type
-    assert ld.location.start.value == 44908821
-    assert ld.location.end.value == 44908822
-    assert ld.location.type == "SequenceLocation"
+    assert ld.location == "gene:b"
 
     invalid_params = [
-        {"id": "s:1", "location_id": location_descriptor.location_id,
+        {"id": "s:1", "location_id": "location:1",
          "type": "SequenceDescriptor"},
         {"id": location_descriptor.id},
         {"id": location_descriptor.id, "sequence": gene}
@@ -221,15 +213,13 @@ def test_location_descriptor(location_descriptor, sequence_location, gene):
 def test_gene_descriptor(gene_descriptor, gene):
     """Test that Gene Descriptor model works correctly."""
     assert gene_descriptor.id == "vod:id"
-    assert gene_descriptor.gene_id == "gene:abl1"
+    assert gene_descriptor.gene == "gene:abl1"
     assert gene_descriptor.type == "GeneDescriptor"
 
-    g = GeneDescriptor(id="vod:gene", gene=gene, gene_id="gene:348",
-                       type="GeneDescriptor")
+    g = GeneDescriptor(id="vod:gene", gene=gene, type="GeneDescriptor")
     assert g.id == "vod:gene"
     assert g.gene.id == "ncbigene:348"
     assert g.gene.type == "Gene"
-    assert g.gene_id == "gene:348"
 
     invalid_params = [
         {"id": gene_descriptor.id},
@@ -265,9 +255,9 @@ def test_vcf_record(vcf_record):
 def test_variation_descriptor(allele, gene_descriptor, vcf_record, expression,
                               extension, braf_v600e_vd):
     """Test that Variation Descriptor model works correctly."""
-    vd = VariationDescriptor(id="var:id", variation_id="variation:id")
+    vd = VariationDescriptor(id="var:id", variation="variation:id")
     assert vd.id == "var:id"
-    assert vd.variation_id == "variation:id"
+    assert vd.variation == "variation:id"
     assert vd.type == "VariationDescriptor"
 
     vd = VariationDescriptor(**braf_v600e_vd)
@@ -293,7 +283,7 @@ def test_variation_descriptor(allele, gene_descriptor, vcf_record, expression,
     assert vd.variation.location.type == "SequenceLocation"
     assert vd.variation.state.sequence == "C"
     assert vd.gene_context.id == "vod:id"
-    assert vd.gene_context.gene_id == "gene:abl1"
+    assert vd.gene_context.gene == "gene:abl1"
     assert vd.vcf_record.genome_assembly == "grch38"
     assert vd.vcf_record.chrom == "9"
     assert vd.vcf_record.pos == 123
@@ -501,8 +491,8 @@ def test_disease_descriptor(disease_descriptor):
     assert ext.name == "associated_with"
     assert ext.value == ["HP:0030358"]
 
-    disease_descr = DiseaseDescriptor(disease_id="ncit:C2926")
-    assert disease_descr.disease_id == "ncit:C2926"
+    disease_descr = DiseaseDescriptor(disease="ncit:C2926")
+    assert disease_descr.disease == "ncit:C2926"
 
     with pytest.raises(pydantic.error_wrappers.ValidationError):
         DiseaseDescriptor(id="disease:1")
@@ -516,8 +506,8 @@ def test_phenotype_descriptor(phenotype_descriptor):
     assert phenotype_descriptor.label == "Abnormality of body height"
     assert phenotype_descriptor.type == "PhenotypeDescriptor"
 
-    phenotype_descr = PhenotypeDescriptor(phenotype_id="HP:0000002")
-    assert phenotype_descr.phenotype_id == "HP:0000002"
+    phenotype_descr = PhenotypeDescriptor(phenotype="HP:0000002")
+    assert phenotype_descr.phenotype == "HP:0000002"
 
     with pytest.raises(pydantic.error_wrappers.ValidationError):
         PhenotypeDescriptor(id="phenotype:1")
@@ -540,10 +530,10 @@ def test_condition_descriptor(phenotype_descriptor, disease_descriptor, phenotyp
     assert condition_descr.label == "condition descriptor"
 
     condition_descr = ConditionDescriptor(
-        condition_id="condition:1",
+        condition="condition:1",
         member_descriptors=[phenotype_descriptor]
     )
-    assert condition_descr.condition_id == "condition:1"
+    assert condition_descr.condition == "condition:1"
     assert condition_descr.member_descriptors == [phenotype_descriptor]
 
     invalid_params = [
@@ -562,7 +552,7 @@ def test_canonical_variation_descriptor(allele):
     """Test that CanonicalVariationDescriptor model works correctly"""
     canonical_variation = CanonicalVariation(id="clinvar:13961",
                                              canonical_context=allele)
-    subject_descriptor = VariationDescriptor(variation_id="clinvar:13961",
+    subject_descriptor = VariationDescriptor(variation="clinvar:13961",
                                              label="test")
     canonical_vd = CanonicalVariationDescriptor(
         subject_variation_descriptor=subject_descriptor,
@@ -574,11 +564,11 @@ def test_canonical_variation_descriptor(allele):
 
     canonical_vd = CanonicalVariationDescriptor(
         subject_variation_descriptor=subject_descriptor,
-        canonical_variation_id="canonical_variation:1"
+        canonical_variation="canonical_variation:1"
     )
     assert canonical_vd.type == "CanonicalVariationDescriptor"
     assert canonical_vd.subject_variation_descriptor == subject_descriptor
-    assert canonical_vd.canonical_variation_id == "canonical_variation:1"
+    assert canonical_vd.canonical_variation == "canonical_variation:1"
 
     invalid_params = [
         {"canonical_variation_id": "curie:1"},
@@ -597,9 +587,9 @@ def test_therapeutic_descriptor(therapeutic1, disease):
     assert td.therapeutic.type == "Therapeutic"
     assert td.label == "imatinib"
 
-    td = TherapeuticDescriptor(**{"therapeutic_id": "rxcui:282388"})
+    td = TherapeuticDescriptor(**{"therapeutic": "rxcui:282388"})
     assert td.type == "TherapeuticDescriptor"
-    assert td.therapeutic_id == "rxcui:282388"
+    assert td.therapeutic == "rxcui:282388"
 
     invalid_params = [
         {"therapy_id": "rxcui:282388"},
@@ -620,21 +610,19 @@ def test_therapeutic_collection_descriptor(combination_therapeutic_collection,
     assert tcd.member_descriptors == list()
 
     tcd = TherapeuticCollectionDescriptor(**{
-        "therapeutic_collection": substitute_therapeutic_collection,
-        "therapeutic_collection_id": "therapeutic_collection_descriptor:1",
+        "therapeutic_collection": "therapeutic_collection_descriptor:1",
         "member_descriptors": [
-            TherapeuticDescriptor(therapeutic_id="rxcui:282388"),
-            TherapeuticDescriptor(therapeutic_id="rxcui:1147220"),
+            TherapeuticDescriptor(therapeutic="rxcui:282388"),
+            TherapeuticDescriptor(therapeutic="rxcui:1147220"),
         ]
     })
     assert tcd.type == "TherapeuticsCollectionDescriptor"
-    assert tcd.therapeutic_collection == substitute_therapeutic_collection
-    assert tcd.therapeutic_collection_id == "therapeutic_collection_descriptor:1"
+    assert tcd.therapeutic_collection == "therapeutic_collection_descriptor:1"
     assert len(tcd.member_descriptors) == 2
     assert tcd.member_descriptors[0].type == "TherapeuticDescriptor"
-    assert tcd.member_descriptors[0].therapeutic_id == "rxcui:282388"
+    assert tcd.member_descriptors[0].therapeutic == "rxcui:282388"
     assert tcd.member_descriptors[1].type == "TherapeuticDescriptor"
-    assert tcd.member_descriptors[1].therapeutic_id == "rxcui:1147220"
+    assert tcd.member_descriptors[1].therapeutic == "rxcui:1147220"
 
     invalid_params = [
         {"therapeutic_collection_id": "invalid"}

@@ -2,8 +2,7 @@
 from enum import Enum
 from typing import List, Optional, Union, Literal
 
-from pydantic import StrictInt, StrictStr, root_validator, validator, Field, \
-    BaseModel, Extra
+from pydantic import StrictInt, StrictStr, validator, Field, BaseModel, Extra
 
 from ga4gh.vrsatile.pydantic import return_value, BaseModelForbidExtra
 from ga4gh.vrsatile.pydantic.core_models import CURIE, Therapeutic, ValueEntity, \
@@ -172,19 +171,9 @@ class ValueObjectDescriptor(ValueObjectDescriptorBaseModel):
     parent class are inherited by descendent classes.
     """
 
-    value: Optional[ValueEntity]
-    value_id: Optional[CURIE]
+    value: Union[CURIE, ValueEntity]
 
     _get_value = validator('value', allow_reuse=True)(return_value)
-    _get_value_id = validator('value_id', allow_reuse=True)(return_value)
-
-    @root_validator(pre=True)
-    def check_value_or_value_id_present(cls, values):
-        """Check that at least one of {`value`, `value_id`} is set."""
-        msg = 'Must give values for either `value`, `value_id`, or both'
-        value, value_id = values.get('value'), values.get('value_id')
-        assert value or value_id, msg
-        return values
 
     class Config:
         """Class configs."""
@@ -196,23 +185,11 @@ class SequenceDescriptor(ValueObjectDescriptorBaseModel):
     """This descriptor is intended to reference VRS Sequence value objects."""
 
     type: Literal[VODClassName.SEQUENCE_DESCRIPTOR] = VODClassName.SEQUENCE_DESCRIPTOR
-    sequence_id: Optional[CURIE]
-    sequence: Optional[Sequence]
+    sequence: Union[CURIE, Sequence]
     residue_type: Optional[CURIE]
 
-    @root_validator(pre=True)
-    def check_sequence_or_sequence_id_present(cls, values):
-        """Check that at least one of {`sequence`, `sequence_id`} is set."""
-        msg = 'Must give values for either `sequence`, `sequence_id`, or both'
-        value, value_id = values.get('sequence'), values.get('sequence_id')
-        assert value or value_id, msg
-        return values
-
-    _get_sequence_id_val = \
-        validator('sequence_id', allow_reuse=True)(return_value)
     _get_sequence_val = validator('sequence', allow_reuse=True)(return_value)
-    _get_residue_type_val = \
-        validator('residue_type', allow_reuse=True)(return_value)
+    _get_residue_type_val = validator('residue_type', allow_reuse=True)(return_value)
 
     class Config:
         """Class configs."""
@@ -224,19 +201,9 @@ class LocationDescriptor(ValueObjectDescriptorBaseModel):
     """This descriptor is intended to reference VRS Location value objects."""
 
     type: Literal[VODClassName.LOCATION_DESCRIPTOR] = VODClassName.LOCATION_DESCRIPTOR
-    location_id: Optional[CURIE]
-    location: Optional[Union[SequenceLocation, ChromosomeLocation]]
+    location: Union[CURIE, SequenceLocation, ChromosomeLocation]
 
-    @root_validator(pre=True)
-    def check_location_or_location_id_present(cls, values):
-        """Check that at least one of {`location`, `location_id`} is set."""
-        msg = 'Must give values for either `location`, `location_id`, or both'
-        value, value_id = values.get('location'), values.get('location_id')
-        assert value or value_id, msg
-        return values
-
-    _get_location_id_val = \
-        validator('location_id', allow_reuse=True)(return_value)
+    _get_location_val = validator('location', allow_reuse=True)(return_value)
 
     class Config:
         """Class configs."""
@@ -248,26 +215,21 @@ class GeneDescriptor(ValueObjectDescriptorBaseModel):
     """This descriptor is intended to reference VRS Gene value objects."""
 
     type: Literal[VODClassName.GENE_DESCRIPTOR] = VODClassName.GENE_DESCRIPTOR
-    gene_id: Optional[CURIE]
-    gene: Optional[Gene]
+    gene: Union[CURIE, Gene]
 
-    @root_validator(pre=True)
-    def check_gene_or_gene_id_present(cls, values):
-        """Check that at least one of {`gene`, `gene_id`} is set."""
-        msg = 'Must give values for either `gene`, `gene_id`, or both'
-        value, value_id = values.get('gene'), values.get('gene_id')
-        assert value or value_id, msg
-        return values
+    _get_gene_val = validator('gene', allow_reuse=True)(return_value)
 
-    _get_gene_id_val = validator('gene_id', allow_reuse=True)(return_value)
+    class Config:
+        """Class configs."""
+
+        extra = Extra.forbid
 
 
 class VariationDescriptor(ValueObjectDescriptorBaseModel):
     """This descriptor class is used for describing VRS Variation value objects."""
 
     type: Literal[VODClassName.VARIATION_DESCRIPTOR] = VODClassName.VARIATION_DESCRIPTOR
-    variation_id: Optional[CURIE]
-    variation: Optional[Variation]
+    variation: Union[CURIE, Variation]
     molecule_context: Optional[MoleculeContext]
     structural_type: Optional[CURIE]
     expressions: Optional[List[Expression]] = []
@@ -277,21 +239,12 @@ class VariationDescriptor(ValueObjectDescriptorBaseModel):
     allelic_state: Optional[CURIE]
 
     _get_variation_val = validator('variation', allow_reuse=True)(return_value)
-    _get_variation_id_val = validator('variation_id', allow_reuse=True)(return_value)
     _get_structural_type_val = \
         validator('structural_type', allow_reuse=True)(return_value)
     _get_gene_context_val = validator('gene_context', allow_reuse=True)(return_value)
     _get_vrs_allele_ref_seq_val = \
         validator('vrs_ref_allele_seq', allow_reuse=True)(return_value)
     _get_allelic_state_val = validator('allelic_state', allow_reuse=True)(return_value)
-
-    @root_validator(pre=True)
-    def check_variation_or_variation_id_present(cls, values):
-        """Check that at least one of {`variation`, `variation_id`} is set."""
-        msg = 'Must give values for either `variation`, `variation_id`, or both'
-        value, value_id = values.get('variation'), values.get('variation_id')
-        assert value or value_id, msg
-        return values
 
     class Config:
         """Class configs."""
@@ -303,18 +256,9 @@ class DiseaseDescriptor(ValueObjectDescriptorBaseModel):
     """This descriptor class is used for describing Disease domain entities."""
 
     type: Literal[VODClassName.DISEASE_DESCRIPTOR] = VODClassName.DISEASE_DESCRIPTOR
-    disease: Optional[Disease]
-    disease_id: Optional[CURIE]
+    disease: Union[CURIE, Disease]
 
-    _get_disease_id_val = validator('disease_id', allow_reuse=True)(return_value)
-
-    @root_validator(pre=True)
-    def check_disease_or_disease_id_present(cls, values):
-        """Check that at least one of {`disease`, `disease_id`} is set."""
-        msg = 'Must give values for either `disease`, `disease_id`, or both'
-        value, value_id = values.get('disease'), values.get('disease_id')
-        assert value or value_id, msg
-        return values
+    _get_disease_val = validator('disease', allow_reuse=True)(return_value)
 
     class Config:
         """Class configs."""
@@ -326,18 +270,9 @@ class PhenotypeDescriptor(ValueObjectDescriptorBaseModel):
     """This descriptor class is used for describing Phenotype domain entities."""
 
     type: Literal[VODClassName.PHENOTYPE_DESCRIPTOR] = VODClassName.PHENOTYPE_DESCRIPTOR
-    phenotype: Optional[Phenotype]
-    phenotype_id: Optional[CURIE]
+    phenotype: Union[CURIE, Phenotype]
 
-    _get_phenotype_id_val = validator('phenotype_id', allow_reuse=True)(return_value)
-
-    @root_validator(pre=True)
-    def check_phenotype_or_phenotype_id_present(cls, values):
-        """Check that at least one of {`phenotype`, `phenotype_id`} is set."""
-        msg = 'Must give values for either `phenotype`, `phenotype_id`, or both'
-        value, value_id = values.get('phenotype'), values.get('phenotype_id')
-        assert value or value_id, msg
-        return values
+    _get_phenotype_val = validator('phenotype', allow_reuse=True)(return_value)
 
     class Config:
         """Class configs."""
@@ -349,19 +284,10 @@ class ConditionDescriptor(ValueObjectDescriptorBaseModel):
     """This descriptor class is used for describing Condition entities."""
 
     type: Literal[VODClassName.CONDITION_DESCRIPTOR] = VODClassName.CONDITION_DESCRIPTOR
-    condition: Optional[Condition]
-    condition_id: Optional[CURIE]
+    condition: Union[CURIE, Condition]
     member_descriptors: List[Union[DiseaseDescriptor, PhenotypeDescriptor]]
 
-    _get_condition_id_val = validator('condition_id', allow_reuse=True)(return_value)
-
-    @root_validator(pre=True)
-    def check_condition_or_condition_id_present(cls, values):
-        """Check that at least one of {`condition`, `condition_id`} is set."""
-        msg = 'Must give values for either `condition`, `condition_id`, or both'
-        value, value_id = values.get('condition'), values.get('condition_id')
-        assert value or value_id, msg
-        return values
+    _get_condition_val = validator('condition', allow_reuse=True)(return_value)
 
     class Config:
         """Class configs."""
@@ -374,19 +300,9 @@ class TherapeuticDescriptor(ValueObjectDescriptorBaseModel):
 
     type: Literal[VODClassName.THERAPEUTIC_DESCRIPTOR] = \
         VODClassName.THERAPEUTIC_DESCRIPTOR
-    therapeutic: Optional[Therapeutic]
-    therapeutic_id: Optional[CURIE]
+    therapeutic: Union[CURIE, Therapeutic]
 
-    _get_therapeutic_id_val = validator("therapeutic_id",
-                                        allow_reuse=True)(return_value)
-
-    @root_validator(pre=True)
-    def check_therapeutic_or_therapeutic_id_present(cls, values):
-        """Check that at least one of {`therapeutic`, `therapeutic_id`} is set."""
-        msg = 'Must give values for either `therapeutic`, `therapeutic_id`, or both'
-        value, value_id = values.get("therapeutic"), values.get("therapeutic_id")
-        assert value or value_id, msg
-        return values
+    _get_therapeutic_val = validator("therapeutic", allow_reuse=True)(return_value)
 
     class Config:
         """Class configs."""
@@ -401,25 +317,12 @@ class TherapeuticCollectionDescriptor(ValueObjectDescriptorBaseModel):
 
     type: Literal[VODClassName.THERAPEUTIC_COLLECTION_DESCRIPTOR] = \
         VODClassName.THERAPEUTIC_COLLECTION_DESCRIPTOR
-    therapeutic_collection: Optional[Union[CombinationTherapeuticCollection,
-                                           SubstituteTherapeuticCollection]]
-    therapeutic_collection_id: Optional[CURIE]
+    therapeutic_collection: Union[CURIE, CombinationTherapeuticCollection,
+                                  SubstituteTherapeuticCollection]
     member_descriptors: Optional[List[TherapeuticDescriptor]] = []
 
-    _get_therapeutic_collection_id_val = validator("therapeutic_collection_id",
-                                                   allow_reuse=True)(return_value)
-
-    @root_validator(pre=True)
-    def check_therapeutic_collection_or_therapeutic_collection_id_present(cls, values):
-        """Check that at least one of {`therapeutic_collection`,
-        `therapeutic_collection_id`} is set."
-        """
-        msg = 'Must give values for either `therapeutic_collection`, "\
-            "`therapeutic_collection_id`, or both'
-        value = values.get("therapeutic_collection")
-        value_id = values.get("therapeutic_collection_id")
-        assert value or value_id, msg
-        return values
+    _get_therapeutic_collection_val = validator("therapeutic_collection",
+                                                allow_reuse=True)(return_value)
 
     class Config:
         """Class configs."""
@@ -459,26 +362,10 @@ class CategoricalVariationDescriptor(CategoricalVariationDescriptorBaseModel):
 
     type: Literal[VODClassName.CATEGORICAL_VARIATION_DESCRIPTOR] = \
         VODClassName.CATEGORICAL_VARIATION_DESCRIPTOR
-    categorical_variation_id: Optional[CURIE]
-    categorical_variation: Optional[Union[CanonicalVariation,
-                                          ComplexVariation]]
+    categorical_variation: Union[CURIE, CanonicalVariation, ComplexVariation]
 
-    _get_categorical_variation_id_val = \
-        validator("categorical_variation_id", allow_reuse=True)(return_value)
     _get_categorical_variation_val = \
         validator("categorical_variation", allow_reuse=True)(return_value)
-
-    @root_validator(pre=True)
-    def check_categorical_variation_or_categorical_variation_id_present(cls, values):
-        """Check that at least one of {`categorical_variation`,
-        `categorical_variation_id`} is set.
-        """
-        msg = 'Must give values for either `categorical_variation`, '\
-              '`categorical_variation_id`, or both'
-        value, value_id = values.get('categorical_variation'), \
-            values.get('categorical_variation_id')
-        assert value or value_id, msg
-        return values
 
     class Config:
         """Class configs."""
@@ -494,23 +381,10 @@ class CanonicalVariationDescriptor(CategoricalVariationDescriptorBaseModel):
     type: Literal[VODClassName.CANONICAL_VARIATION_DESCRIPTOR] = \
         VODClassName.CANONICAL_VARIATION_DESCRIPTOR
     subject_variation_descriptor: VariationDescriptor
-    canonical_variation_id: Optional[CURIE]
-    canonical_variation: Optional[CanonicalVariation]
+    canonical_variation: Union[CURIE, CanonicalVariation]
 
-    _get_canonical_variation_id_val = \
-        validator("canonical_variation_id", allow_reuse=True)(return_value)
     _get_canonical_variation_val = \
         validator("canonical_variation", allow_reuse=True)(return_value)
-
-    @root_validator(pre=True)
-    def check_canonical_variation_or_canonical_variation_id_present(cls, values):
-        """Check that at least one of {`canonical_variation`, `canonical_variation_id`}
-        is set.
-        """
-        msg = 'Must give values for either `canonical_variation`, `canonical_variation_id`, or both'  # noqa: E501
-        value, value_id = values.get('canonical_variation'), values.get('canonical_variation_id')  # noqa: E501
-        assert value or value_id, msg
-        return values
 
     class Config:
         """Class configs."""
