@@ -156,7 +156,7 @@ class ValueObjectDescriptorBaseModel(ExtensibleEntity):
     label: Optional[StrictStr]
     description: Optional[StrictStr]
     xrefs: Optional[List[CURIE]] = Field([], unique_items=True)
-    alternate_labels: Optional[List[StrictStr]] = []
+    alternate_labels: Optional[List[StrictStr]]
 
     _get_xrefs_val = validator('xrefs', allow_reuse=True)(return_value)
 
@@ -232,7 +232,7 @@ class VariationDescriptor(ValueObjectDescriptorBaseModel):
     variation: Union[CURIE, Variation]
     molecule_context: Optional[MoleculeContext]
     structural_type: Optional[CURIE]
-    expressions: Optional[List[Expression]] = []
+    expressions: Optional[List[Expression]]
     vcf_record: Optional[VCFRecord]
     gene_context: Optional[Union[CURIE, GeneDescriptor]]
     vrs_ref_allele_seq: Optional[Sequence]
@@ -319,7 +319,7 @@ class TherapeuticCollectionDescriptor(ValueObjectDescriptorBaseModel):
         VODClassName.THERAPEUTIC_COLLECTION_DESCRIPTOR
     therapeutic_collection: Union[CURIE, CombinationTherapeuticCollection,
                                   SubstituteTherapeuticCollection]
-    member_descriptors: Optional[List[TherapeuticDescriptor]] = []
+    member_descriptors: Optional[List[TherapeuticDescriptor]]
 
     _get_therapeutic_collection_val = validator("therapeutic_collection",
                                                 allow_reuse=True)(return_value)
@@ -352,7 +352,7 @@ class CategoricalVariationDescriptorBaseModel(ValueObjectDescriptorBaseModel):
     """Base model for categorical variation descriptor"""
 
     type: StrictStr
-    members: Optional[List[VariationMember]] = []
+    members: Optional[List[VariationMember]]
 
 
 class CategoricalVariationDescriptor(CategoricalVariationDescriptorBaseModel):

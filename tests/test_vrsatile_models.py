@@ -607,7 +607,7 @@ def test_therapeutic_collection_descriptor(combination_therapeutic_collection,
         therapeutic_collection=combination_therapeutic_collection)
     assert tcd.type == "TherapeuticsCollectionDescriptor"
     assert tcd.therapeutic_collection == combination_therapeutic_collection
-    assert tcd.member_descriptors == list()
+    assert tcd.member_descriptors is None
 
     tcd = TherapeuticCollectionDescriptor(**{
         "therapeutic_collection": "therapeutic_collection_descriptor:1",
