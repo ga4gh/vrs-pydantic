@@ -24,7 +24,7 @@ def return_value(cls, v):
     :param v: Model from vrs or vrsatile
     :return: Value
     """
-    if v is not None:
+    if v:
         try:
             if hasattr(v, "__root__"):
                 v = return_value(cls, v.__root__)

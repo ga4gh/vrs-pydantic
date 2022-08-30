@@ -155,10 +155,17 @@ class ValueObjectDescriptorBaseModel(ExtensibleEntity):
 
     label: Optional[StrictStr]
     description: Optional[StrictStr]
-    xrefs: Optional[List[CURIE]] = Field([], unique_items=True)
+    xrefs: Optional[List[CURIE]]
     alternate_labels: Optional[List[StrictStr]]
 
     _get_xrefs_val = validator('xrefs', allow_reuse=True)(return_value)
+
+    @validator("xrefs")
+    def check_count_value(cls, v):
+        """Check xrefs value"""
+        if v:
+            assert len(v) == len(set(v)), "xrefs must contain unique items"
+        return v
 
     class Config:
         """Class configs."""

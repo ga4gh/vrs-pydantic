@@ -152,7 +152,9 @@ def test_value_object_descriptor(extension, expression, gene):
         {"id": "vod:1", "type": "SequenceDescriptor", "label": [1]},
         {"id": vod.id, "type": vod.type, "xrefs": ["xref", "xrefs"]},
         {"id": vod.id, "type": vod.type, "alternate_labels": ["xref", 1]},
-        {"id": vod.id, "type": vod.type, "extensions": [extension, expression]}
+        {"id": vod.id, "type": vod.type, "extensions": [extension, expression]},
+        {"id": vod.id, "type": vod.type, "value": "value:id",
+         "xrefs": ["test:1", "test:1"]}
     ]
 
     for invalid_param in invalid_params:
