@@ -51,7 +51,7 @@ class ExtensibleEntity(EntityBaseModel):
     """
 
     label: Optional[StrictStr]
-    extensions: Optional[List[Extension]] = []
+    extensions: Optional[List[Extension]]
 
 
 class Entity(BaseModel):

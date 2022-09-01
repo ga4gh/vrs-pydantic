@@ -145,20 +145,19 @@ def expression():
 @pytest.fixture(scope="session")
 def sequence_descriptor():
     """Create test fixture for Sequence Descriptor."""
-    return SequenceDescriptor(id="vod:id", sequence_id="sequence:id")
+    return SequenceDescriptor(id="vod:id", sequence="sequence:id")
 
 
 @pytest.fixture(scope="session")
 def location_descriptor(chromosome_location):
     """Create test fixture for Location Descriptor."""
-    return LocationDescriptor(id="vod:id", location_id="gene:a",
-                              location=chromosome_location)
+    return LocationDescriptor(id="vod:id", location=chromosome_location)
 
 
 @pytest.fixture(scope="session")
 def gene_descriptor(gene):
     """Create test fixture for Gene Descriptor."""
-    return GeneDescriptor(id="vod:id", gene_id="gene:abl1")
+    return GeneDescriptor(id="vod:id", gene="gene:abl1")
 
 
 @pytest.fixture(scope="session")
@@ -191,7 +190,6 @@ def braf_v600e_vd(braf_v600e_variation):
     return {
         "id": "normalize.variation:braf%20v600e",
         "type": "VariationDescriptor",
-        "variation_id": "ga4gh:VA.8JkgnqIgYqufNl-OV_hpRG_aWF9UFQCE",
         "variation": braf_v600e_variation,
         "molecule_context": "protein",
         "structural_type": "SO:0001606",
