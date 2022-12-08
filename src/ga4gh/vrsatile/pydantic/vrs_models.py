@@ -43,11 +43,12 @@ class Comparator(str, Enum):
 class RelativeCopyClass(str, Enum):
     """The relative copy class"""
 
-    COMPLETE_LOSS = "complete loss"
-    PARTIAL_LOSS = "partial loss"
-    COPY_NEUTRAL = "copy neutral"
-    LOW_LEVEL_GAIN = "low-level gain"
-    HIGH_LEVEL_GAIN = "high-level gain"
+    COPY_NUMBER_GAIN = "EFO:0030070"
+    HIGH_LEVEL_COPY_NUMBER_GAIN = "EFO:0030072"
+    FOCAL_GENOME_AMPLIFICATION = "EFO:0030073"
+    COPY_NUMBER_LOSS = "EFO:0030067"
+    COMPLETE_GENOMIC_DELETION = "EFO:0030069"
+    LOW_LEVEL_COPY_NUMBER_LOSS = "EFO:0030068"
 
 
 # =============================================================================

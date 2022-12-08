@@ -379,28 +379,37 @@ def test_relative_copy_number(number, sequence_location, gene, allele,
                               chromosome_location):
     """Test that Relative Copy Number model works correctly."""
     c = RelativeCopyNumber(location="location:curie",
-                           relative_copy_class="complete loss")
+                           relative_copy_class="EFO:0030069")
     assert c.location == "location:curie"
-    assert c.relative_copy_class == "complete loss"
+    assert c.relative_copy_class == "EFO:0030069"
     assert c.type == "RelativeCopyNumber"
 
     c = RelativeCopyNumber(location=sequence_location,
-                           relative_copy_class="low-level gain")
+                           relative_copy_class="EFO:0030073")
     assert c.location.type == "SequenceLocation"
-    assert c.relative_copy_class == "low-level gain"
+    assert c.relative_copy_class == "EFO:0030073"
 
     c = RelativeCopyNumber(location=chromosome_location,
-                           relative_copy_class="copy neutral")
+                           relative_copy_class="EFO:0030068")
     assert c.location.type == "ChromosomeLocation"
-    assert c.relative_copy_class == "copy neutral"
+    assert c.relative_copy_class == "EFO:0030068"
+
+    for relative_copy_class in {"EFO:0030070", "EFO:0030072", "EFO:0030067",
+                                "EFO:0030069"}:
+        assert RelativeCopyNumber(**{
+            "location": sequence_location,
+            "relative_copy_class": relative_copy_class
+        })
 
     invalid_params = [
-        {"location": gene, "copies": number, "relative_copy_class": "complete loss"},
+        {"location": gene, "copies": number, "relative_copy_class": "EFO:0030068"},
         {"location": number, "copies": number},
-        {"ID": "ga4gh:id", "location": gene, "relative_copy_class": "complete loss"},
+        {"ID": "ga4gh:id", "location": gene, "relative_copy_class": "EFO:0030068"},
         {"location": allele},
-        {"location": "fake:curie", "relative_copy_class": "low-level gain", "extra": 0},
-        {"location": allele, "relative_copy_class": "partial loss"}
+        {"location": "fake:curie", "relative_copy_class": "EFO:0030068", "extra": 0},
+        {"location": allele, "relative_copy_class": "partial loss"},
+        {"location": sequence_location, "relative_copy_class": "complete loss"},
+        {"location": sequence_location, "relative_copy_class": "fake:curie"}
     ]
 
     for invalid_param in invalid_params:
