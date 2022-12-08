@@ -395,7 +395,7 @@ def test_relative_copy_number(number, sequence_location, gene, allele,
     assert c.relative_copy_class == "EFO:0030068"
 
     for relative_copy_class in {"EFO:0030070", "EFO:0030072", "EFO:0030067",
-                                "EFO:0030069"}:
+                                "EFO:0030069", "EFO:0030071"}:
         assert RelativeCopyNumber(**{
             "location": sequence_location,
             "relative_copy_class": relative_copy_class
