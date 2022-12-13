@@ -384,11 +384,6 @@ def test_relative_copy_number(number, sequence_location, gene, allele,
     assert c.relative_copy_class == "EFO:0030069"
     assert c.type == "RelativeCopyNumber"
 
-    c = RelativeCopyNumber(location=sequence_location,
-                           relative_copy_class="EFO:0030073")
-    assert c.location.type == "SequenceLocation"
-    assert c.relative_copy_class == "EFO:0030073"
-
     c = RelativeCopyNumber(location=chromosome_location,
                            relative_copy_class="EFO:0030068")
     assert c.location.type == "ChromosomeLocation"
@@ -409,7 +404,8 @@ def test_relative_copy_number(number, sequence_location, gene, allele,
         {"location": "fake:curie", "relative_copy_class": "EFO:0030068", "extra": 0},
         {"location": allele, "relative_copy_class": "partial loss"},
         {"location": sequence_location, "relative_copy_class": "complete loss"},
-        {"location": sequence_location, "relative_copy_class": "fake:curie"}
+        {"location": sequence_location, "relative_copy_class": "fake:curie"},
+        {"location": sequence_location, "relative_copy_class": "EFO:0030073"}
     ]
 
     for invalid_param in invalid_params:
