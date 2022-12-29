@@ -1,5 +1,10 @@
 # vrsatile-pydantic
-Translation of the GA4GH [VRS v1.2.0](https://vrs.ga4gh.org/en/1.2.0) and [VRSATILE](https://vrsatile.readthedocs.io/en/latest/) schemas to a Pydantic data model
+Translation of the GA4GH [VRS](https://vrs.ga4gh.org/en/stable/) and [VRSATILE](https://vrsatile.readthedocs.io/en/latest/) schemas to a Pydantic data model
+
+The ga4gh/vrsatile/pydantic repo depends on VRS and VRSATILE models, and therefore each ga4gh.vrsatile.pydantic package on PyPI uses a particular version of VRS and VRSATILE. The correspondences between the packages may be summarized as:
+
+- **0.0.X ~ 1.2.X**: ga4gh.vrsatile.pydantic 0.0.X tracks [VRS 1.2.X](https://vrs.ga4gh.org/en/1.2.1/) and the [VRSATILE latest](https://vrsatile.readthedocs.io/en/latest/)
+- **0.1.X ~ metaschema-updates**: ga4gh.vrsatile.pydantic 0.1.X tracks VRS and VRSATILE metaschema-updates
 
 # Developer instructions
 

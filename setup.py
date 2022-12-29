@@ -1,4 +1,5 @@
-"""Module for package and distribution"""
+"""Module for package and distribution."""
 from setuptools import setup
 
-setup(version="0.1.dev6")
+exec(open('src/ga4gh/vrsatile/pydantic/version.py').read())
+setup(version=__version__)  # noqa: F821
