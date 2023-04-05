@@ -3,7 +3,7 @@ Translation of the GA4GH [VRS](https://vrs.ga4gh.org/en/stable/) and [VRSATILE](
 
 The ga4gh/vrsatile/pydantic repo depends on VRS and VRSATILE models, and therefore each ga4gh.vrsatile.pydantic package on PyPI uses a particular version of VRS and VRSATILE. The correspondences between the packages may be summarized as:
 
-ga4gh.vrsatile.pydantic branch | ga4gh.vrsatile.pydantic version | VRS version | VRSATILE version|
+| ga4gh.vrsatile.pydantic branch | ga4gh.vrsatile.pydantic version | VRS version | VRSATILE version |
 | ---- | --- | --- | --- |
 | vrs-1.2 *(no longer being updated)* | 0.0.X | [1.2.X](https://github.com/ga4gh/vrs/tree/1.2) | [main](https://github.com/ga4gh/vrsatile/tree/main) |
 | metaschema-update | 0.1.X | [metaschema-update](https://github.com/ga4gh/vrs/tree/metaschema-update) | [metaschema-update](https://github.com/ga4gh/vrsatile/tree/metaschema-update)
