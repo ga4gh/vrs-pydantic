@@ -63,7 +63,7 @@ class CopyChange(str, Enum):
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # BASIC TYPES (STRUCTURES)
 # These types do NOT have a VRS `type` attribute
-# These types do NOT have a VRS `type` attribute
+# These types are used solely within other definitions.
 
 
 class CURIE(BaseModelForbidExtra):
