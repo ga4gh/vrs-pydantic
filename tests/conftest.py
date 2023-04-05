@@ -1,9 +1,9 @@
 """Module for pytest config tools."""
 import pytest
-from ga4gh.vrsatile.pydantic.vrs_models import SequenceInterval, \
-    CytobandInterval, SequenceLocation, DerivedSequenceExpression, Number, \
-    IndefiniteRange, DefiniteRange, Allele, LiteralSequenceExpression, Gene, \
-    ChromosomeLocation
+
+from ga4gh.vrsatile.pydantic.vrs_models import SequenceInterval, CytobandInterval, \
+    SequenceLocation, DerivedSequenceExpression, Number, IndefiniteRange, \
+    DefiniteRange, Allele, LiteralSequenceExpression, Gene, ChromosomeLocation
 from ga4gh.vrsatile.pydantic.vrsatile_models import Extension, Expression, \
     SequenceDescriptor, LocationDescriptor, GeneDescriptor, VCFRecord
 
