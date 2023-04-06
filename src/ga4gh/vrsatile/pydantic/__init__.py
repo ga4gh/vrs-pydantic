@@ -15,6 +15,7 @@ class BaseModelForbidExtra(BaseModel, ABC):
         """Class configs."""
 
         extra = Extra.forbid
+        allow_population_by_field_name = True
 
 
 class BaseModelDeprecated(BaseModel, ABC):

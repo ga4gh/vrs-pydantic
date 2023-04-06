@@ -7,8 +7,8 @@ from pydantic import BaseModel, Extra, StrictInt, StrictStr, \
     root_validator, validator, Field
 
 from ga4gh.vrsatile.pydantic import return_value, BaseModelForbidExtra
-from ga4gh.vrsatile.pydantic.vrs_models import CURIE, Allele, Haplotype, \
-    AbsoluteCopyNumber, RelativeCopyNumber, Text, VariationSet, SequenceLocation, \
+from ga4gh.vrsatile.pydantic.vrs_models import CURIE, Allele, CopyNumberChange, \
+    CopyNumberCount, Haplotype, Text, VariationSet, SequenceLocation, \
     ChromosomeLocation, Sequence, Gene
 
 
@@ -183,8 +183,8 @@ class VariationDescriptor(BaseModelForbidExtra, ValueObjectDescriptor):
     type: Literal[VODClassName.VARIATION_DESCRIPTOR] = \
         VODClassName.VARIATION_DESCRIPTOR
     variation_id: Optional[CURIE]
-    variation: Optional[Union[Allele, Haplotype, AbsoluteCopyNumber,
-                              RelativeCopyNumber, Text, VariationSet]]
+    variation: Optional[Union[Allele, Haplotype, CopyNumberChange, CopyNumberCount,
+                              Text, VariationSet]]
     molecule_context: Optional[MoleculeContext]
     structural_type: Optional[CURIE]
     expressions: Optional[List[Expression]]
@@ -212,7 +212,7 @@ class CategoricalVariationType(str, Enum):
     COMPLEX_VARIATION = "ComplexVariation"
 
 
-class CategoricalVariation(BaseModel):
+class CategoricalVariation(BaseModelForbidExtra):
     """A representation of a categorically-defined `functional domain
     <https://en.wikipedia.org/wiki/Domain_of_a_function>`_ for variation, in
     which individual variation instances may be members.
@@ -224,11 +224,6 @@ class CategoricalVariation(BaseModel):
 
     _get_id_val = validator("id", allow_reuse=True)(return_value)
 
-    class Config(BaseModelForbidExtra.Config):
-        """Class configs."""
-
-        allow_population_by_field_name = True
-
 
 class CanonicalVariation(CategoricalVariation):
     """A categorical variation domain characterized by a representative
@@ -238,8 +233,8 @@ class CanonicalVariation(CategoricalVariation):
 
     type: Literal[CategoricalVariationType.CANONICAL_VARIATION] = \
         CategoricalVariationType.CANONICAL_VARIATION
-    variation: Optional[Union[Allele, Haplotype, AbsoluteCopyNumber,
-                              RelativeCopyNumber, Text, VariationSet]]
+    variation: Optional[Union[Allele, Haplotype, CopyNumberChange, CopyNumberCount,
+                              Text, VariationSet]]
 
 
 class ComplexVariationOperator(str, Enum):

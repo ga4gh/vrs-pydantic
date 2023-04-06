@@ -8,3 +8,4 @@ exclude =
   source
   outputs
   docs/*
+  build

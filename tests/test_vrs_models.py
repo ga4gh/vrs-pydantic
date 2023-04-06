@@ -1,13 +1,13 @@
 """Module for testing the VRS model."""
 import pydantic
 import pytest
-from ga4gh.vrsatile.pydantic.vrs_models import Number, Comparator, \
-    IndefiniteRange, DefiniteRange, Text, \
-    SequenceInterval, CytobandInterval, DerivedSequenceExpression, \
-    LiteralSequenceExpression, RepeatedSequenceExpression, Gene, \
-    SequenceLocation, VariationSet, Haplotype, \
-    AbsoluteCopyNumber, Allele, ChromosomeLocation, Feature, SystemicVariation, \
-    SimpleInterval, SequenceState, RelativeCopyNumber
+
+from ga4gh.vrsatile.pydantic.vrs_models import ComposedSequenceExpression, Number, \
+    Comparator, IndefiniteRange, DefiniteRange, Text, SequenceInterval, \
+    CytobandInterval, Gene, Haplotype, Allele, DerivedSequenceExpression, \
+    SimpleInterval, SequenceState, Feature, VariationSet, \
+    LiteralSequenceExpression, RepeatedSequenceExpression, SystemicVariation, \
+    SequenceLocation, ChromosomeLocation, CopyNumberChange, CopyNumberCount
 
 
 def test_number(number):
@@ -41,9 +41,13 @@ def test_indefinite_range(indefinite_range):
     assert indefinite_range.comparator == Comparator.GT_OR_EQUAL
 
     assert IndefiniteRange(value=2, comparator="<=", type="IndefiniteRange")
+    assert IndefiniteRange(value=2.0, comparator="<=", type="IndefiniteRange")
+    assert IndefiniteRange(value=2.342342, comparator="<=", type="IndefiniteRange")
 
     invalid_params = [
         {"value": "3", "comparator": Comparator.LT_OR_EQUAL},
+        {"value": "3.0", "comparator": Comparator.LT_OR_EQUAL},
+        {"value": "3.2323", "comparator": Comparator.LT_OR_EQUAL},
         {"values": 2, "comparator": Comparator.LT_OR_EQUAL},
         {"value": 3, "comparator": "=="},
         {"value": 2, "comparator": Comparator.LT_OR_EQUAL, "type": "s"}
@@ -61,10 +65,17 @@ def test_definite_range(definite_range):
     assert definite_range.type == "DefiniteRange"
 
     assert DefiniteRange(min=0, max=2, type="DefiniteRange")
+    assert DefiniteRange(min=0.0, max=2.0)
+    assert DefiniteRange(min=0.01, max=2.1241241)
 
     invalid_params = [
         {"min": 22, "max": 33, "type": "IndefiniteRange"},
-        {"min": 22.0, "max": 33}
+        {"min": "22.0", "max": 33},
+        {"min": "22.0", "max": 33},
+        {"min": "22.230", "max": 33},
+        {"min": 22.0, "max": "33"},
+        {"min": 22.0, "max": "33.0"},
+        {"min": 22.0, "max": "33.230"}
     ]
 
     for invalid_param in invalid_params:
@@ -117,9 +128,33 @@ def test_sequence_interval(sequence_interval):
         type="SequenceInterval"
     )
 
+    assert SequenceInterval(
+        start=IndefiniteRange(value=2, comparator="<=", type="IndefiniteRange"),
+        end=Number(value=44908822),
+        type="SequenceInterval"
+    )
+
+    assert SequenceInterval(
+        start=DefiniteRange(min=0, max=200),
+        end=Number(value=44908822),
+        type="SequenceInterval"
+    )
+
     invalid_params = [
         {"start": 44908821, "end": 44908822},
-        {"start": {"value": 2}, "end": {"value": 3}, "type": "M"}
+        {"start": {"value": 2}, "end": {"value": 3}, "type": "M"},
+        {
+            "start": {"value": -1, "type": "Number"},
+            "end": {"value": 44908822, "type": "Number"}
+        },
+        {
+            "start": {"value": 44908823, "type": "Number"},
+            "end": {"value": 44908822, "type": "Number"}
+        },
+        {
+            "start": {"min": 0, "max": 44908823, "type": "DefiniteRange"},
+            "end": {"value": 44908822, "type": "Number"}
+        }
     ]
 
     for invalid_param in invalid_params:
@@ -167,6 +202,27 @@ def test_literal_sequence_expression():
             LiteralSequenceExpression(**invalid_param)
 
 
+def test_composed_sequence_expression(derived_sequence_expression, number):
+    """Test that Composed Sequence Expression model works correctly"""
+    assert ComposedSequenceExpression(
+        components=[
+            LiteralSequenceExpression(sequence="ACGT",
+                                      type="LiteralSequenceExpression"),
+            RepeatedSequenceExpression(
+                seq_expr=derived_sequence_expression,
+                count=number
+            )
+        ]
+    )
+
+    with pytest.raises(pydantic.error_wrappers.ValidationError):
+        ComposedSequenceExpression(components=[
+            LiteralSequenceExpression(sequence="ACGT",
+                                      type="LiteralSequenceExpression"),
+            LiteralSequenceExpression(sequence="AT", type="LiteralSequenceExpression"),
+        ])
+
+
 def test_gene():
     """Test that Gene model works correctly."""
     g = Gene(gene_id="hgnc:5")
@@ -191,22 +247,32 @@ def test_chromosome_location(chromosome_location, cytoband_interval):
     assert chromosome_location.interval.start == chromosome_location.interval.end == "q13.32"  # noqa: E501
     assert chromosome_location.type == "ChromosomeLocation"
 
-    assert ChromosomeLocation(
-        chr="19",
-        interval=cytoband_interval,
-        species_id="taxonomy:9606",
-        type="ChromosomeLocation"
-    )
+    chrs = [str(i) for i in range(1, 23)] + ["X", "Y"]
+    for chr in chrs:
+        cl = ChromosomeLocation(
+            chr=chr,
+            interval=cytoband_interval,
+        )
+        assert cl
+        assert cl.type == "ChromosomeLocation"
+        assert cl.chr == chr
+        assert cl.species_id == "taxonomy:9606"
 
     invalid_params = [
-        {"chr": "1",
-         "interval": {"start": "q13.32!", "end": "q13.32"},
-         "species_id": "taxonomy:9606"
-         },
-        {"chr": "1",
-         "interval": {"start": "q13.32", "end": "q13.32"},
-         "species": "taxonomy:9606"
-         }
+        {
+            "chr": "1",
+            "interval": {"start": "q13.32!", "end": "q13.32"},
+            "species_id": "taxonomy:9606"
+        },
+        {
+            "chr": "1",
+            "interval": {"start": "q13.32", "end": "q13.32"},
+            "species": "taxonomy:9606"
+        },
+        {
+            "chr": "Z",
+            "interval": {"start": "q13.32", "end": "q13.32"}
+        }
     ]
 
     for invalid_param in invalid_params:
@@ -370,14 +436,14 @@ def test_haplotype(allele):
                            "ga4gh:VA.Z_rYRxpUvwqCLsCBO3YLl70o2uf9_Op1"])
     assert len(h.members) == 2
 
-    h = Haplotype(members=[allele], type="Haplotype")
-    assert len(h.members) == 1
-
     invalid_params = [
-        {"members": [allele], "type": "Alleles"},
-        {"members": allele},
-        {"members": [allele, "ga4ghVA"]},
-        {"members": [allele], "id_": "ga4gh:VA"}
+        {"members": [allele], "type": "Haplotype"},  # members must have len >= 2
+        {"members": allele},  # members is a list
+        {"members": [allele, "ga4ghVA"]},  # Not a CURIE
+        {"members": [allele], "id_": "ga4gh:VA"},  # invalid property name id_
+        {"members": [allele, allele]},  # not unique
+        {"members": ["ga4gh:VA.-kUJh47Pu24Y3Wdsk1rXEDKsXWNY-68x",
+                     "ga4gh:VA.-kUJh47Pu24Y3Wdsk1rXEDKsXWNY-68x"]},  # not unique
     ]
 
     for invalid_param in invalid_params:
@@ -385,65 +451,62 @@ def test_haplotype(allele):
             Haplotype(**invalid_param)
 
 
-def test_absolute_copy_number(number, definite_range, indefinite_range, gene, allele,
-                              sequence_location):
-    """Test that Absolute Copy Number model works correctly."""
-    c = AbsoluteCopyNumber(subject=gene, copies=number)
+def test_copy_number_count(number, definite_range, indefinite_range, gene, allele,
+                           sequence_location):
+    """Test that Copy Number Count model works correctly."""
+    c = CopyNumberCount(subject=gene, copies=number)
     assert c.subject.gene_id == "ncbigene:348"
     assert c.copies.value == 3
-    assert c.type == "AbsoluteCopyNumber"
+    assert c.type == "CopyNumberCount"
 
-    c = AbsoluteCopyNumber(
-        subject=gene, copies=definite_range, type="AbsoluteCopyNumber")
+    c = CopyNumberCount(
+        subject=gene, copies=definite_range, type="CopyNumberCount")
     assert c.subject.gene_id == "ncbigene:348"
     assert c.copies.min == 22
     assert c.copies.max == 33
 
-    c = AbsoluteCopyNumber(subject=gene, copies=indefinite_range)
+    c = CopyNumberCount(subject=gene, copies=indefinite_range)
     assert c.subject.gene_id == "ncbigene:348"
     assert c.copies.value == 3
     assert c.copies.comparator == ">="
 
-    c = AbsoluteCopyNumber(subject=sequence_location, copies=number)
+    c = CopyNumberCount(subject=sequence_location, copies=number)
     assert c.subject.type == "SequenceLocation"
 
     invalid_params = [
         {"subjects": number, "copies": number},
         {"ID": "ga4gh:id", "subject": gene, "copies": number},
-        {"subject": [allele], "copies": number},
-        {"subject": "ga4gh:id", "copies": number}
+        {"subject": [allele], "copies": number}
     ]
 
     for invalid_param in invalid_params:
         with pytest.raises(pydantic.error_wrappers.ValidationError):
-            AbsoluteCopyNumber(**invalid_param)
+            CopyNumberCount(**invalid_param)
 
 
-def test_relative_copy_number(number, sequence_location, gene, allele):
-    """Test that Relative Copy Number model works correctly."""
-    c = RelativeCopyNumber(subject=gene, relative_copy_class="complete loss")
+def test_copy_number_change(number, sequence_location, gene, allele):
+    """Test that Copy Number Change model works correctly."""
+    c = CopyNumberChange(subject=gene, copy_change="EFO:0030069")
     assert c.subject.gene_id == "ncbigene:348"
-    assert c.relative_copy_class == "complete loss"
-    assert c.type == "RelativeCopyNumber"
+    assert c.copy_change == "EFO:0030069"
+    assert c.type == "CopyNumberChange"
 
-    c = RelativeCopyNumber(subject=sequence_location,
-                           relative_copy_class="low-level gain")
+    c = CopyNumberChange(subject=sequence_location, copy_change="EFO:0030071")
     assert c.subject.type == "SequenceLocation"
-    assert c.relative_copy_class == "low-level gain"
+    assert c.copy_change == "EFO:0030071"
 
     invalid_params = [
         {"subject": number, "copies": number},
-        {"ID": "ga4gh:id", "subject": gene, "relative_copy_class": "complete loss"},
+        {"ID": "ga4gh:id", "subject": gene, "copy_change": "EFO:0030069"},
         {"subject": allele},
-        {"subject": "fake:curie", "relative_copy_class": "low-level gain", "extra": 0},
-        {"subject": "fake:curie", "relative_copy_class": "low-level"},
-        {"subject": allele, "relative_copy_class": "partial loss"},
-        {"subject": "fake:curie", "relative_copy_class": "low-level gain"}
+        {"subject": "fake:curie", "copy_change": "EFO:0030071", "extra": 0},
+        {"subject": "fake:curie", "copy_change": "low-level"},
+        {"subject": allele, "copy_change": "partial loss"},
     ]
 
     for invalid_param in invalid_params:
         with pytest.raises(pydantic.error_wrappers.ValidationError):
-            RelativeCopyNumber(**invalid_param)
+            CopyNumberChange(**invalid_param)
 
 
 def test_variation_set(allele, sequence_location):
@@ -451,6 +514,8 @@ def test_variation_set(allele, sequence_location):
     v = VariationSet(members=[])
     assert len(v.members) == 0
     assert v.type == "VariationSet"
+
+    assert VariationSet(members=[allele, "fake:curie", Text(definition="def")])
 
     v = VariationSet(members=[allele], type="VariationSet")
     assert len(v.members) == 1
@@ -462,7 +527,9 @@ def test_variation_set(allele, sequence_location):
     invalid_params = [
         {"members": [1]},
         {"members": [allele, sequence_location]},
-        {"members": [allele], "type": "VS"}
+        {"members": [allele], "type": "VS"},
+        {"members": [allele, allele]},  # not unique
+        {"members": ["fake:curie", "fake:curie"]}  # not unique
     ]
 
     for invalid_param in invalid_params:
@@ -474,7 +541,7 @@ def test_feature(gene):
     """Test Feature class."""
     schema = Feature.schema()
     assert schema["title"] == "Feature"
-    assert schema["description"] == "A named entity that can be mapped to a Location. Genes, protein domains,\nexons, and chromosomes are some examples of common biological entities\nthat may be Features."  # noqa: E501
+    assert schema["description"] == "A named entity that can be mapped to a Location. Genes, protein domains, exons, and chromosomes are some examples of common biological entities that may be Features."  # noqa: E501
     assert schema
     assert schema["anyOf"][0]["$ref"] == "#/components/schemas/Gene"
 
@@ -483,7 +550,7 @@ def test_feature(gene):
 
 def test_systemic_variation(gene, number):
     """Test SystemicVariation class."""
-    c = AbsoluteCopyNumber(subject=gene, copies=number)
+    c = CopyNumberCount(subject=gene, copies=number)
     assert SystemicVariation(__root__=c)
 
 
