@@ -9,24 +9,31 @@ The ga4gh/vrsatile/pydantic repo depends on VRS and VRSATILE models, and therefo
 | metaschema-update | 0.1.X | [metaschema-update](https://github.com/ga4gh/vrs/tree/metaschema-update) | [metaschema-update](https://github.com/ga4gh/vrsatile/tree/metaschema-update)
 | main | 0.2.X | [1.3.X](https://github.com/ga4gh/vrs/tree/1.3) | [main](https://github.com/ga4gh/vrsatile/tree/main)
 
-# Developer instructions
+## Installation
 
-To install vrstaile-pydantic:
+vrsatile-pydantic is available via PyPI:
 ```commandline
 pip install ga4gh.vrsatile.pydantic
 ```
 
+## Developer Instructions
+
 Following are sections include instructions specifically for developers.
+
+### Installation
 
 For a development install, we recommend using Pipenv. See the
 [pipenv docs](https://pipenv-fork.readthedocs.io/en/latest/#install-pipenv-today)
 for direction on installing pipenv in your compute environment.
 
-Once installed, from the project root dir, just run:
+Once installed, clone the repo and initialize the environment:
 
 ```commandline
-pipenv lock
-pipenv sync
+git clone https://github.com/ga4gh/vrsatile-pydantic
+cd vrsatile-pydantic
+pipenv shell
+pipenv update
+pipenv install --dev
 ```
 
 ### Init coding style tests
@@ -48,11 +55,10 @@ Before first commit run:
 pre-commit install
 ```
 
-
 ### Running unit tests
 
 Running unit tests is as easy as pytest.
 
 ```commandline
-pipenv run pytest
+pipenv run pytest tests
 ```
