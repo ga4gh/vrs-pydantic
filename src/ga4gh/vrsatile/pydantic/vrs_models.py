@@ -26,8 +26,8 @@ class VRSTypes(str, Enum):
     COMPOSED_SEQUENCE_EXPRESSION = "ComposedSequenceExpression"
     ALLELE = "Allele"
     HAPLOTYPE = "Haplotype"
-    ABSOLUTE_COPY_NUMBER = "AbsoluteCopyNumber"
-    RELATIVE_COPY_NUMBER = "RelativeCopyNumber"
+    COPY_NUMBER_COUNT = "CopyNumberCount"
+    COPY_NUMBER_CHANGE = "CopyNumberChange"
     VARIATION_SET = "VariationSet"
     GENOTYPE = "Genotype"
     GENOTYPE_MEMBER = "GenotypeMember"
@@ -40,15 +40,17 @@ class Comparator(str, Enum):
     GT_OR_EQUAL = ">="
 
 
-class RelativeCopyClass(str, Enum):
-    """The relative copy class"""
+class CopyChange(str, Enum):
+    """The copy change (https://www.ebi.ac.uk/efo/)"""
 
-    COPY_NUMBER_GAIN = "EFO:0030070"
-    HIGH_LEVEL_COPY_NUMBER_GAIN = "EFO:0030072"
-    LOW_LEVEL_COPY_NUMBER_GAIN = "EFO:0030071"
-    COPY_NUMBER_LOSS = "EFO:0030067"
-    COMPLETE_GENOMIC_DELETION = "EFO:0030069"
-    LOW_LEVEL_COPY_NUMBER_LOSS = "EFO:0030068"
+    COMPLETE_GENOMIC_LOSS = "EFO:0030069"
+    HIGH_LEVEL_LOSS = "EFO:0020073"
+    LOW_LEVEL_LOSS = "EFO:0030068"
+    LOSS = "EFO:0030067"
+    REGIONAL_BASE_PLOIDY = "EFO:0030064"
+    GAIN = "EFO:0030070"
+    LOW_LEVEL_GAIN = "EFO:0030071"
+    HIGH_LEVEL_GAIN = "EFO:0030072"
 
 
 # =============================================================================
@@ -239,28 +241,6 @@ class SequenceExpression(BaseModel):
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# Feature
-
-
-class Feature(BaseModelForbidExtra):
-    """A named entity that can be mapped to a Location. Genes, protein domains,
-    exons, and chromosomes are some examples of common biological entities
-    that may be Features.
-    """
-
-    __root__: Gene
-
-    class Config:
-        """Configure Pydantic attributes."""
-
-        @staticmethod
-        def schema_extra(schema, model):
-            """Ensure JSON schema output matches original VRS model."""
-            del schema["$ref"]
-            schema["anyOf"] = [{"$ref": "#/components/schemas/Gene"}]
-
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Molecular Variation
 
 
@@ -306,18 +286,17 @@ class MolecularVariation(BaseModel):
 class CopyNumberBaseModel(ValueEntity):
     """Base model for Copy Number"""
 
-    location: Union[Location, CURIE]
-    get_location_val = validator('location', allow_reuse=True)(return_value)
+    subject: Union[CURIE, Location, Gene]
+    get_subject_val = validator('subject', allow_reuse=True)(return_value)
 
 
-class AbsoluteCopyNumber(CopyNumberBaseModel):
-    """The absolute count of discrete copies of a MolecularVariation, Feature,
-    SequenceExpression, or a CURIE reference within a system
+class CopyNumberCount(CopyNumberBaseModel):
+    """The absolute count of discrete copies of a Location or Gene, within a system
     (e.g. genome, cell, etc.).
     """
 
-    type: Literal[VRSTypes.ABSOLUTE_COPY_NUMBER] = VRSTypes.ABSOLUTE_COPY_NUMBER
-    copies: Union[Number, IndefiniteRange, DefiniteRange]
+    type: Literal[VRSTypes.COPY_NUMBER_COUNT] = VRSTypes.COPY_NUMBER_COUNT
+    copies: Union[DefiniteRange, IndefiniteRange, Number]
 
     class Config:
         """Class configs."""
@@ -325,14 +304,13 @@ class AbsoluteCopyNumber(CopyNumberBaseModel):
         extra = Extra.forbid
 
 
-class RelativeCopyNumber(CopyNumberBaseModel):
-    """The relative copies of a MolecularVariation, Feature, SequenceExpression,
-    or a CURIE reference against an unspecified baseline in a system
-    (e.g. genome, cell, etc.).
+class CopyNumberChange(CopyNumberBaseModel):
+    """An assessment of the copy number of a Location or a Gene within a system
+    (e.g. genome, cell, etc.) relative to a baseline ploidy.
     """
 
-    type: Literal[VRSTypes.RELATIVE_COPY_NUMBER] = VRSTypes.RELATIVE_COPY_NUMBER
-    relative_copy_class: RelativeCopyClass
+    type: Literal[VRSTypes.COPY_NUMBER_CHANGE] = VRSTypes.COPY_NUMBER_CHANGE
+    copy_change: CopyChange
 
     class Config:
         """Class configs."""
@@ -343,7 +321,7 @@ class RelativeCopyNumber(CopyNumberBaseModel):
 class CopyNumber(BaseModel):
     """A measure of the copies of a :ref:`Location` within a system (e.g. a genome)"""
 
-    __root__: Union[AbsoluteCopyNumber, RelativeCopyNumber]
+    __root__: Union[CopyNumberCount, CopyNumberChange]
 
 
 class GenotypeMember(BaseModelForbidExtra):
@@ -379,7 +357,7 @@ class SystemicVariation(BaseModel):
     e.g. a genome, sample, or homologous chromosomes.
     """
 
-    __root__: Union[AbsoluteCopyNumber, RelativeCopyNumber, Genotype]
+    __root__: Union[CopyNumberCount, CopyNumberChange, Genotype]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # UtilityVariation

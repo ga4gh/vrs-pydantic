@@ -7,8 +7,7 @@ from ga4gh.vrsatile.pydantic.vrs_models import ComposedSequenceExpression, Genot
     GenotypeMember, Number, Comparator, IndefiniteRange, DefiniteRange, Text, \
     DerivedSequenceExpression, LiteralSequenceExpression, \
     RepeatedSequenceExpression, SequenceLocation, VariationSet, Haplotype, \
-    AbsoluteCopyNumber, Allele, ChromosomeLocation, Feature, SystemicVariation, \
-    RelativeCopyNumber
+    CopyNumberCount, Allele, ChromosomeLocation, SystemicVariation, CopyNumberChange
 
 
 def test_number(number):
@@ -349,68 +348,66 @@ def test_haplotype(allele, haplotype):
             Haplotype(**invalid_param)
 
 
-def test_absolute_copy_number(number, definite_range, gene, allele, sequence_location,
-                              chromosome_location):
-    """Test that Absolute Copy Number model works correctly."""
-    c = AbsoluteCopyNumber(location="location:curie", copies=number)
-    assert c.location == "location:curie"
+def test_copy_number_count(number, definite_range, indefinite_range, gene, allele,
+                           sequence_location):
+    """Test that Copy Number Count model works correctly."""
+    c = CopyNumberCount(subject=gene, copies=number)
+    assert c.subject.id == "ncbigene:348"
+    assert c.subject.type == "Gene"
     assert c.copies.value == 3
-    assert c.type == "AbsoluteCopyNumber"
+    assert c.type == "CopyNumberCount"
 
-    c = AbsoluteCopyNumber(location=sequence_location, copies=number)
-    assert c.location.type == "SequenceLocation"
+    c = CopyNumberCount(
+        subject=gene, copies=definite_range, type="CopyNumberCount")
+    assert c.subject.id == "ncbigene:348"
+    assert c.subject.type == "Gene"
+    assert c.copies.min == 22
+    assert c.copies.max == 33
 
-    c = AbsoluteCopyNumber(location=chromosome_location, copies=number)
-    assert c.location.type == "ChromosomeLocation"
+    c = CopyNumberCount(subject=gene, copies=indefinite_range)
+    assert c.subject.id == "ncbigene:348"
+    assert c.subject.type == "Gene"
+    assert c.copies.value == 3
+    assert c.copies.comparator == ">="
+
+    c = CopyNumberCount(subject=sequence_location, copies=number)
+    assert c.subject.type == "SequenceLocation"
 
     invalid_params = [
-        {"locations": number, "copies": number},
-        {"ID": "ga4gh:id", "location": gene, "copies": number},
-        {"location": [allele], "copies": number},
-        {"location": gene, "copies": definite_range}
+        {"subjects": number, "copies": number},
+        {"ID": "ga4gh:id", "subject": gene, "copies": number},
+        {"subject": [allele], "copies": number}
     ]
 
     for invalid_param in invalid_params:
         with pytest.raises(pydantic.error_wrappers.ValidationError):
-            AbsoluteCopyNumber(**invalid_param)
+            CopyNumberCount(**invalid_param)
 
 
-def test_relative_copy_number(number, sequence_location, gene, allele,
-                              chromosome_location):
-    """Test that Relative Copy Number model works correctly."""
-    c = RelativeCopyNumber(location="location:curie",
-                           relative_copy_class="EFO:0030069")
-    assert c.location == "location:curie"
-    assert c.relative_copy_class == "EFO:0030069"
-    assert c.type == "RelativeCopyNumber"
+def test_copy_number_change(number, sequence_location, gene, allele):
+    """Test that Copy Number Change model works correctly."""
+    c = CopyNumberChange(subject=gene, copy_change="EFO:0030069")
+    assert c.subject.id == "ncbigene:348"
+    assert c.subject.type == "Gene"
+    assert c.copy_change == "EFO:0030069"
+    assert c.type == "CopyNumberChange"
 
-    c = RelativeCopyNumber(location=chromosome_location,
-                           relative_copy_class="EFO:0030068")
-    assert c.location.type == "ChromosomeLocation"
-    assert c.relative_copy_class == "EFO:0030068"
-
-    for relative_copy_class in {"EFO:0030070", "EFO:0030072", "EFO:0030067",
-                                "EFO:0030069", "EFO:0030071"}:
-        assert RelativeCopyNumber(**{
-            "location": sequence_location,
-            "relative_copy_class": relative_copy_class
-        })
+    c = CopyNumberChange(subject=sequence_location, copy_change="EFO:0030071")
+    assert c.subject.type == "SequenceLocation"
+    assert c.copy_change == "EFO:0030071"
 
     invalid_params = [
-        {"location": gene, "copies": number, "relative_copy_class": "EFO:0030068"},
-        {"location": number, "copies": number},
-        {"ID": "ga4gh:id", "location": gene, "relative_copy_class": "EFO:0030068"},
-        {"location": allele},
-        {"location": "fake:curie", "relative_copy_class": "EFO:0030068", "extra": 0},
-        {"location": allele, "relative_copy_class": "partial loss"},
-        {"location": sequence_location, "relative_copy_class": "complete loss"},
-        {"location": sequence_location, "relative_copy_class": "fake:curie"},
-        {"location": sequence_location, "relative_copy_class": "EFO:0030073"}
+        {"subject": number, "copies": number},
+        {"ID": "ga4gh:id", "subject": gene, "copy_change": "EFO:0030069"},
+        {"subject": allele},
+        {"subject": "fake:curie", "copy_change": "EFO:0030071", "extra": 0},
+        {"subject": "fake:curie", "copy_change": "low-level"},
+        {"subject": allele, "copy_change": "partial loss"},
     ]
 
     for invalid_param in invalid_params:
         with pytest.raises(pydantic.error_wrappers.ValidationError):
-            RelativeCopyNumber(**invalid_param)
+            CopyNumberChange(**invalid_param)
 
 
 def test_variation_set(allele, sequence_location):
@@ -437,20 +434,9 @@ def test_variation_set(allele, sequence_location):
             VariationSet(**invalid_param)
 
 
-def test_feature(gene):
-    """Test Feature class."""
-    schema = Feature.schema()
-    assert schema["title"] == "Feature"
-    assert schema["description"] == "A named entity that can be mapped to a Location. Genes, protein domains,\nexons, and chromosomes are some examples of common biological entities\nthat may be Features."  # noqa: E501
-    assert schema
-    assert schema["anyOf"][0]["$ref"] == "#/components/schemas/Gene"
-
-    assert Feature(__root__=gene)
-
-
-def test_systemic_variation(sequence_location, number):
+def test_systemic_variation(gene, number):
     """Test SystemicVariation class."""
-    c = AbsoluteCopyNumber(location=sequence_location, copies=number)
+    c = CopyNumberCount(subject=gene, copies=number)
     assert SystemicVariation(__root__=c)
 
 
