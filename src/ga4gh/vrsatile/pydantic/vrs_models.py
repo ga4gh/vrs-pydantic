@@ -43,14 +43,14 @@ class Comparator(str, Enum):
 class CopyChange(str, Enum):
     """The copy change (https://www.ebi.ac.uk/efo/)"""
 
-    COMPLETE_GENOMIC_LOSS = "EFO:0030069"
-    HIGH_LEVEL_LOSS = "EFO:0020073"
-    LOW_LEVEL_LOSS = "EFO:0030068"
-    LOSS = "EFO:0030067"
-    REGIONAL_BASE_PLOIDY = "EFO:0030064"
-    GAIN = "EFO:0030070"
-    LOW_LEVEL_GAIN = "EFO:0030071"
-    HIGH_LEVEL_GAIN = "EFO:0030072"
+    COMPLETE_GENOMIC_LOSS = "efo:0030069"
+    HIGH_LEVEL_LOSS = "efo:0020073"
+    LOW_LEVEL_LOSS = "efo:0030068"
+    LOSS = "efo:0030067"
+    REGIONAL_BASE_PLOIDY = "efo:0030064"
+    GAIN = "efo:0030070"
+    LOW_LEVEL_GAIN = "efo:0030071"
+    HIGH_LEVEL_GAIN = "efo:0030072"
 
 
 # =============================================================================
