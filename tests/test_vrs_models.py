@@ -486,20 +486,20 @@ def test_copy_number_count(number, definite_range, indefinite_range, gene, allel
 
 def test_copy_number_change(number, sequence_location, gene, allele):
     """Test that Copy Number Change model works correctly."""
-    c = CopyNumberChange(subject=gene, copy_change="EFO:0030069")
+    c = CopyNumberChange(subject=gene, copy_change="efo:0030069")
     assert c.subject.gene_id == "ncbigene:348"
-    assert c.copy_change == "EFO:0030069"
+    assert c.copy_change == "efo:0030069"
     assert c.type == "CopyNumberChange"
 
-    c = CopyNumberChange(subject=sequence_location, copy_change="EFO:0030071")
+    c = CopyNumberChange(subject=sequence_location, copy_change="efo:0030071")
     assert c.subject.type == "SequenceLocation"
-    assert c.copy_change == "EFO:0030071"
+    assert c.copy_change == "efo:0030071"
 
     invalid_params = [
         {"subject": number, "copies": number},
-        {"ID": "ga4gh:id", "subject": gene, "copy_change": "EFO:0030069"},
+        {"ID": "ga4gh:id", "subject": gene, "copy_change": "efo:0030069"},
         {"subject": allele},
-        {"subject": "fake:curie", "copy_change": "EFO:0030071", "extra": 0},
+        {"subject": "fake:curie", "copy_change": "efo:0030071", "extra": 0},
         {"subject": "fake:curie", "copy_change": "low-level"},
         {"subject": allele, "copy_change": "partial loss"},
     ]

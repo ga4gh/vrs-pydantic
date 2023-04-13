@@ -50,14 +50,14 @@ class Comparator(str, Enum):
 class CopyChange(str, Enum):
     """The copy change (https://www.ebi.ac.uk/efo/)"""
 
-    COMPLETE_GENOMIC_LOSS = "EFO:0030069"
-    HIGH_LEVEL_LOSS = "EFO:0020073"
-    LOW_LEVEL_LOSS = "EFO:0030068"
-    LOSS = "EFO:0030067"
-    REGIONAL_BASE_PLOIDY = "EFO:0030064"
-    GAIN = "EFO:0030070"
-    LOW_LEVEL_GAIN = "EFO:0030071"
-    HIGH_LEVEL_GAIN = "EFO:0030072"
+    COMPLETE_GENOMIC_LOSS = "efo:0030069"
+    HIGH_LEVEL_LOSS = "efo:0020073"
+    LOW_LEVEL_LOSS = "efo:0030068"
+    LOSS = "efo:0030067"
+    REGIONAL_BASE_PLOIDY = "efo:0030064"
+    GAIN = "efo:0030070"
+    LOW_LEVEL_GAIN = "efo:0030071"
+    HIGH_LEVEL_GAIN = "efo:0030072"
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -574,11 +574,11 @@ class CopyNumberChange(BaseModelForbidExtra):
     )
     copy_change: CopyChange = Field(
         ...,
-        description=("MUST be one of 'EFO:0030069' (complete genomic loss), "
-                     "'EFO:0020073' (high-level loss), 'EFO:0030068' (low-level loss),"
-                     " 'EFO:0030067' (loss), 'EFO:0030064' (regional base ploidy), "
-                     "'EFO:0030070' (gain), 'EFO:0030071' (low-level gain), "
-                     "'EFO:0030072' (high-level gain).")
+        description=("MUST be one of 'efo:0030069' (complete genomic loss), "
+                     "'efo:0020073' (high-level loss), 'efo:0030068' (low-level loss),"
+                     " 'efo:0030067' (loss), 'efo:0030064' (regional base ploidy), "
+                     "'efo:0030070' (gain), 'efo:0030071' (low-level gain), "
+                     "'efo:0030072' (high-level gain).")
     )
 
     _get_id_val = validator("id", allow_reuse=True)(return_value)
