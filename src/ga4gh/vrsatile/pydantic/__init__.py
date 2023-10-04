@@ -2,26 +2,24 @@
 import logging
 from abc import ABC
 
-from pydantic import BaseModel, Extra, root_validator
+from pydantic import BaseModel, model_validator, ConfigDict
 
 
 logger = logging.getLogger("vrsatile-pydantic")
 
 
-class BaseModelForbidExtra(BaseModel, ABC):
+class BaseModelForbidExtra(BaseModel, ABC, extra="forbid"):
     """Base Pydantic model class with extra values forbidden."""
 
-    class Config:
-        """Class configs."""
-
-        extra = Extra.forbid
-        allow_population_by_field_name = True
+    model_config = ConfigDict(
+        populate_by_name=True
+    )
 
 
 class BaseModelDeprecated(BaseModel, ABC):
     """Base Pydantic model class to use for deprecated classes."""
 
-    @root_validator(pre=True)
+    @model_validator(mode="after")
     def log_deprecated_warning(cls, values):
         """Log warning that object class is deprecated."""
         if hasattr(cls, "_replace_with"):
@@ -46,13 +44,13 @@ def return_value(cls, v):
                 for item in v:
                     while True:
                         try:
-                            item = item.__root__
+                            item = item.root
                         except AttributeError:
                             break
                     tmp.append(item)
                 v = tmp
             else:
-                v = v.__root__
+                v = v.root
         except AttributeError:
             pass
     return v

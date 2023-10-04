@@ -151,10 +151,10 @@ def vcf_record():
 def braf_v600e_variation():
     """Create test fixture for BRAF V600E variation"""
     return {
-        "id": "ga4gh:VA.8JkgnqIgYqufNl-OV_hpRG_aWF9UFQCE",
+        "_id": "ga4gh:VA.8JkgnqIgYqufNl-OV_hpRG_aWF9UFQCE",
         "type": "Allele",
         "location": {
-            "id": "ga4gh:VSL.AqrQ-EkAvTrXOFn70_8i3dXF5shBBZ5i",
+            "_id": "ga4gh:VSL.AqrQ-EkAvTrXOFn70_8i3dXF5shBBZ5i",
             "type": "SequenceLocation",
             "sequence_id": "ga4gh:SQ.WaAJ_cXXn9YpMNfhcq9lnzIvaB9ALawo",
             "interval": {

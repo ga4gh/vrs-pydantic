@@ -3,7 +3,7 @@ import pydantic
 import pytest
 
 from ga4gh.vrsatile.pydantic.vrs_models import Number, SequenceLocation, \
-    SequenceInterval, LiteralSequenceExpression, Allele, Sequence
+    SequenceInterval, LiteralSequenceExpression, Allele, SEQUENCE
 from ga4gh.vrsatile.pydantic.vrsatile_models import  \
     MoleculeContext, Extension, Expression, ValueObjectDescriptor, \
     SequenceDescriptor, LocationDescriptor, GeneDescriptor, \
@@ -101,7 +101,7 @@ def test_extension(extension):
     ]
 
     for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             Extension(**invalid_param)
 
 
@@ -130,7 +130,7 @@ def test_expression(expression):
     ]
 
     for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             Expression(**invalid_param)
 
 
@@ -166,7 +166,7 @@ def test_value_object_descriptor(extension, expression):
     ]
 
     for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             ValueObjectDescriptor(**invalid_param)
 
 
@@ -191,7 +191,7 @@ def test_sequence_descriptor(sequence_descriptor, gene):
     ]
 
     for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             SequenceDescriptor(**invalid_param)
 
 
@@ -229,7 +229,7 @@ def test_location_descriptor(location_descriptor, sequence_location, gene):
     ]
 
     for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             LocationDescriptor(**invalid_param)
 
 
@@ -254,7 +254,7 @@ def test_gene_descriptor(gene_descriptor, gene):
     ]
 
     for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             GeneDescriptor(**invalid_param)
 
 
@@ -275,7 +275,7 @@ def test_vcf_record(vcf_record):
     ]
 
     for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             VCFRecord(**invalid_param)
 
 
@@ -340,7 +340,7 @@ def test_variation_descriptor(allele, gene_descriptor, vcf_record, expression,
     ]
 
     for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             VariationDescriptor(**invalid_param)
 
 
@@ -361,11 +361,12 @@ def test_canonical_variation(allele):
     assert cv.variation.state.type.value == "LiteralSequenceExpression"
     assert cv.variation.state.sequence == "C"
 
-    assert set(cv.schema()["properties"].keys()) == {"_id", "type",
-                                                     "complement", "variation"}
+    assert set(cv.model_json_schema()["properties"].keys()) == {
+        "_id", "type", "complement", "variation"
+    }
 
     # check forbid extra
-    with pytest.raises(pydantic.error_wrappers.ValidationError):
+    with pytest.raises(pydantic.ValidationError):
         CanonicalVariation(
             _id="clinvar:13961",
             complement=False,
@@ -396,7 +397,7 @@ def test_categorical_variation(allele):
                         )
                     ),
                     state=LiteralSequenceExpression(
-                        sequence=Sequence(__root__="T")
+                        sequence=SEQUENCE("T")
                     )
                 )
             )
