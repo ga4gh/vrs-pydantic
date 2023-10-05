@@ -3,13 +3,13 @@ from __future__ import annotations
 from enum import Enum
 from typing import List, Optional, Union, Any, Literal
 
-from pydantic import BaseModel, Extra, StrictInt, StrictStr, \
-    root_validator, validator, Field
+from pydantic import BaseModel, StrictInt, StrictStr, \
+    model_validator, field_validator, Field
 
 from ga4gh.vrsatile.pydantic import return_value, BaseModelForbidExtra
 from ga4gh.vrsatile.pydantic.vrs_models import CURIE, Allele, CopyNumberChange, \
     CopyNumberCount, Haplotype, Text, VariationSet, SequenceLocation, \
-    ChromosomeLocation, Sequence, Gene
+    ChromosomeLocation, SEQUENCE, Gene
 
 
 class VODClassName(str, Enum):
@@ -72,29 +72,24 @@ class Expression(BaseModelForbidExtra):
     type: Literal[VRSATILETypes.EXPRESSION] = VRSATILETypes.EXPRESSION
     syntax: ExpressionSyntax
     value: StrictStr
-    syntax_version: Optional[StrictStr]
+    syntax_version: Optional[StrictStr] = None
 
 
-class ValueObjectDescriptor(BaseModel):
+class ValueObjectDescriptor(BaseModel, extra="allow"):
     """The root class of all VODs is the abstract Value Object Descriptor
     class. All attributes of this parent class are inherited by child classes.
     """
 
-    class Config:
-        """Class configs."""
-
-        extra = Extra.allow
-
     id: CURIE
     type: StrictStr
-    label: Optional[StrictStr]
-    description: Optional[StrictStr]
-    xrefs: Optional[List[CURIE]]
-    alternate_labels: Optional[List[StrictStr]]
-    extensions: Optional[List[Extension]]
+    label: Optional[StrictStr] = None
+    description: Optional[StrictStr] = None
+    xrefs: Optional[List[CURIE]] = None
+    alternate_labels: Optional[List[StrictStr]] = None
+    extensions: Optional[List[Extension]] = None
 
-    _get_id_val = validator('id', allow_reuse=True)(return_value)
-    _get_xrefs_val = validator('xrefs', allow_reuse=True)(return_value)
+    _get_id_val = field_validator('id')(return_value)
+    _get_xrefs_val = field_validator('xrefs')(return_value)
 
 
 class SequenceDescriptor(BaseModelForbidExtra, ValueObjectDescriptor):
@@ -102,23 +97,23 @@ class SequenceDescriptor(BaseModelForbidExtra, ValueObjectDescriptor):
 
     type: Literal[VODClassName.SEQUENCE_DESCRIPTOR] = \
         VODClassName.SEQUENCE_DESCRIPTOR
-    sequence_id: Optional[CURIE]
-    sequence: Optional[Sequence]
-    residue_type: Optional[CURIE]
+    sequence_id: Optional[CURIE] = None
+    sequence: Optional[SEQUENCE] = None
+    residue_type: Optional[CURIE] = None
 
-    @root_validator(pre=True)
+    @model_validator(mode="after")
     def check_sequence_or_sequence_id_present(cls, values):
         """Check that at least one of {`sequence`, `sequence_id`} is set."""
         msg = 'Must give values for either `sequence`, `sequence_id`, or both'
-        value, value_id = values.get('sequence'), values.get('sequence_id')
+        value, value_id = values.sequence, values.sequence_id
         assert value or value_id, msg
         return values
 
     _get_sequence_id_val = \
-        validator('sequence_id', allow_reuse=True)(return_value)
-    _get_sequence_val = validator('sequence', allow_reuse=True)(return_value)
+        field_validator('sequence_id')(return_value)
+    _get_sequence_val = field_validator('sequence')(return_value)
     _get_residue_type_val = \
-        validator('residue_type', allow_reuse=True)(return_value)
+        field_validator('residue_type')(return_value)
 
 
 class LocationDescriptor(BaseModelForbidExtra, ValueObjectDescriptor):
@@ -126,37 +121,37 @@ class LocationDescriptor(BaseModelForbidExtra, ValueObjectDescriptor):
 
     type: Literal[VODClassName.LOCATION_DESCRIPTOR] = \
         VODClassName.LOCATION_DESCRIPTOR
-    location_id: Optional[CURIE]
-    location: Optional[Union[SequenceLocation, ChromosomeLocation]]
+    location_id: Optional[CURIE] = None
+    location: Optional[Union[SequenceLocation, ChromosomeLocation]] = None
 
-    @root_validator(pre=True)
+    @model_validator(mode="after")
     def check_location_or_location_id_present(cls, values):
         """Check that at least one of {`location`, `location_id`} is set."""
         msg = 'Must give values for either `location`, `location_id`, or both'
-        value, value_id = values.get('location'), values.get('location_id')
+        value, value_id = values.location, values.location_id
         assert value or value_id, msg
         return values
 
     _get_location_id_val = \
-        validator('location_id', allow_reuse=True)(return_value)
+        field_validator('location_id')(return_value)
 
 
 class GeneDescriptor(BaseModelForbidExtra, ValueObjectDescriptor):
     """This descriptor is intended to reference VRS Gene value objects."""
 
     type: Literal[VODClassName.GENE_DESCRIPTOR] = VODClassName.GENE_DESCRIPTOR
-    gene_id: Optional[CURIE]
-    gene: Optional[Gene]
+    gene_id: Optional[CURIE] = None
+    gene: Optional[Gene] = None
 
-    @root_validator(pre=True)
+    @model_validator(mode="after")
     def check_gene_or_gene_id_present(cls, values):
         """Check that at least one of {`gene`, `gene_id`} is set."""
         msg = 'Must give values for either `gene`, `gene_id`, or both'
-        value, value_id = values.get('gene'), values.get('gene_id')
+        value, value_id = values.gene, values.gene_id
         assert value or value_id, msg
         return values
 
-    _get_gene_id_val = validator('gene_id', allow_reuse=True)(return_value)
+    _get_gene_id_val = field_validator('gene_id')(return_value)
 
 
 class VCFRecord(BaseModelForbidExtra):
@@ -167,12 +162,12 @@ class VCFRecord(BaseModelForbidExtra):
     genome_assembly: StrictStr
     chrom: StrictStr
     pos: StrictInt
-    id: Optional[StrictStr]
+    id: Optional[StrictStr] = None
     ref: StrictStr
     alt: StrictStr
-    qual: Optional[StrictStr]
-    filter: Optional[StrictStr]
-    info: Optional[StrictStr]
+    qual: Optional[StrictStr] = None
+    filter: Optional[StrictStr] = None
+    info: Optional[StrictStr] = None
 
 
 class VariationDescriptor(BaseModelForbidExtra, ValueObjectDescriptor):
@@ -182,27 +177,27 @@ class VariationDescriptor(BaseModelForbidExtra, ValueObjectDescriptor):
 
     type: Literal[VODClassName.VARIATION_DESCRIPTOR] = \
         VODClassName.VARIATION_DESCRIPTOR
-    variation_id: Optional[CURIE]
+    variation_id: Optional[CURIE] = None
     variation: Optional[Union[Allele, Haplotype, CopyNumberChange, CopyNumberCount,
-                              Text, VariationSet]]
-    molecule_context: Optional[MoleculeContext]
-    structural_type: Optional[CURIE]
-    expressions: Optional[List[Expression]]
-    vcf_record: Optional[VCFRecord]
-    gene_context: Optional[Union[CURIE, GeneDescriptor]]
-    vrs_ref_allele_seq: Optional[Sequence]
-    allelic_state: Optional[CURIE]
+                              Text, VariationSet]] = None
+    molecule_context: Optional[MoleculeContext] = None
+    structural_type: Optional[CURIE] = None
+    expressions: Optional[List[Expression]] = None
+    vcf_record: Optional[VCFRecord] = None
+    gene_context: Optional[Union[CURIE, GeneDescriptor]] = None
+    vrs_ref_allele_seq: Optional[SEQUENCE] = None
+    allelic_state: Optional[CURIE] = None
 
     _get_variation_id_val = \
-        validator('variation_id', allow_reuse=True)(return_value)
+        field_validator('variation_id')(return_value)
     _get_structural_type_val = \
-        validator('structural_type', allow_reuse=True)(return_value)
+        field_validator('structural_type')(return_value)
     _get_gene_context_val = \
-        validator('gene_context', allow_reuse=True)(return_value)
+        field_validator('gene_context')(return_value)
     _get_vrs_allele_ref_seq_val = \
-        validator('vrs_ref_allele_seq', allow_reuse=True)(return_value)
+        field_validator('vrs_ref_allele_seq')(return_value)
     _get_allelic_state_val = \
-        validator('allelic_state', allow_reuse=True)(return_value)
+        field_validator('allelic_state')(return_value)
 
 
 class CategoricalVariationType(str, Enum):
@@ -218,11 +213,11 @@ class CategoricalVariation(BaseModelForbidExtra):
     which individual variation instances may be members.
     """
 
-    id: Optional[CURIE] = Field(..., alias="_id")
+    id: Optional[CURIE] = Field(None, alias="_id")
     type: CategoricalVariationType
     complement: bool
 
-    _get_id_val = validator("id", allow_reuse=True)(return_value)
+    _get_id_val = field_validator("id")(return_value)
 
 
 class CanonicalVariation(CategoricalVariation):
@@ -234,7 +229,7 @@ class CanonicalVariation(CategoricalVariation):
     type: Literal[CategoricalVariationType.CANONICAL_VARIATION] = \
         CategoricalVariationType.CANONICAL_VARIATION
     variation: Optional[Union[Allele, Haplotype, CopyNumberChange, CopyNumberCount,
-                              Text, VariationSet]]
+                              Text, VariationSet]] = None
 
 
 class ComplexVariationOperator(str, Enum):
@@ -254,10 +249,10 @@ class ComplexVariation(CategoricalVariation):
     operands: List[CategoricalVariation]
     operator: ComplexVariationOperator
 
-    @root_validator(pre=True)
+    @model_validator(mode="after")
     def check_operands_length(cls, values):
         """Check that `operands` contains >=2 objects"""
-        assert len(values.get("operands")) >= 2
+        assert len(values.operands) >= 2
         return values
 
 
@@ -269,15 +264,15 @@ class VariationMember(BaseModel):
 
     type: Literal["VariationMember"] = "VariationMember"
     expressions: List[Expression]
-    variation_id: Optional[CURIE]
+    variation_id: Optional[CURIE] = None
 
     _get_variation_id_val = \
-        validator("variation_id", allow_reuse=True)(return_value)
+        field_validator("variation_id")(return_value)
 
-    @root_validator(pre=True)
+    @model_validator(mode="after")
     def check_expressions_length(cls, values):
         """Check that `expressions` contains >=1 objects"""
-        assert len(values.get("expressions")) >= 1
+        assert len(values.expressions) >= 1
         return values
 
 
@@ -288,11 +283,11 @@ class CategoricalVariationDescriptor(VariationDescriptor):
 
     type: Literal[VODClassName.CATEGORICAL_VARIATION_DESCRIPTOR] = \
         VODClassName.CATEGORICAL_VARIATION_DESCRIPTOR
-    version: Optional[StrictStr]
-    categorical_variation_id: Optional[CURIE]
+    version: Optional[StrictStr] = None
+    categorical_variation_id: Optional[CURIE] = None
     categorical_variation: Optional[Union[CanonicalVariation,
-                                          ComplexVariation]]
-    members: Optional[List[VariationMember]]
+                                          ComplexVariation]] = None
+    members: Optional[List[VariationMember]] = None
 
     _get_categorical_variation_id_val = \
-        validator("categorical_variation_id", allow_reuse=True)(return_value)
+        field_validator("categorical_variation_id")(return_value)

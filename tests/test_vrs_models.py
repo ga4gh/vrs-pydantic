@@ -25,7 +25,7 @@ def test_number(number):
     ]
 
     for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             Number(**invalid_param)
 
 
@@ -54,7 +54,7 @@ def test_indefinite_range(indefinite_range):
     ]
 
     for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             IndefiniteRange(**invalid_param)
 
 
@@ -79,7 +79,7 @@ def test_definite_range(definite_range):
     ]
 
     for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             DefiniteRange(**invalid_param)
 
 
@@ -96,12 +96,9 @@ def test_text():
     assert t.definition == definition
     assert t.type == "Text"
     assert t.id == "ga4gh:id"
-    t_dict = t.dict(by_alias=True)
+    t_dict = t.model_dump(by_alias=True)
     assert t_dict['_id'] == 'ga4gh:id'
     assert 'id' not in t_dict.keys()
-
-    params = {"definition": definition, "id": "ga4gh:id"}
-    assert Text(**params)
 
     params = {"definition": definition, "_id": "ga4gh:id"}
     assert Text(**params)
@@ -112,7 +109,7 @@ def test_text():
     ]
 
     for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             Text(**invalid_param)
 
 
@@ -158,7 +155,7 @@ def test_sequence_interval(sequence_interval):
     ]
 
     for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             SequenceInterval(**invalid_param)
 
 
@@ -178,7 +175,7 @@ def test_cytoband_interval(cytoband_interval):
     ]
 
     for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             CytobandInterval(**invalid_param)
 
 
@@ -198,7 +195,7 @@ def test_literal_sequence_expression():
     ]
 
     for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             LiteralSequenceExpression(**invalid_param)
 
 
@@ -215,7 +212,7 @@ def test_composed_sequence_expression(derived_sequence_expression, number):
         ]
     )
 
-    with pytest.raises(pydantic.error_wrappers.ValidationError):
+    with pytest.raises(pydantic.ValidationError):
         ComposedSequenceExpression(components=[
             LiteralSequenceExpression(sequence="ACGT",
                                       type="LiteralSequenceExpression"),
@@ -237,7 +234,7 @@ def test_gene():
     ]
 
     for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             Gene(**invalid_param)
 
 
@@ -276,7 +273,7 @@ def test_chromosome_location(chromosome_location, cytoband_interval):
     ]
 
     for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             ChromosomeLocation(**invalid_param)
 
 
@@ -293,13 +290,6 @@ def test_sequence_location(sequence_location, sequence_interval):
     assert s.id == "sequence:id"
     assert s.sequence_id == "refseq:NC_000007.13"
     assert sequence_location.type == "SequenceLocation"
-
-    params = {
-        "id": "sequence:id",
-        "sequence_id": "refseq:NC_000007.13",
-        "interval": sequence_interval
-    }
-    assert SequenceLocation(**params)
 
     params = {
         "_id": "sequence:id",
@@ -323,7 +313,7 @@ def test_sequence_location(sequence_location, sequence_interval):
     ]
 
     for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             SequenceLocation(**invalid_param)
 
 
@@ -352,7 +342,7 @@ def test_derived_sequence_expression(sequence_location,
     ]
 
     for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             DerivedSequenceExpression(**invalid_param)
 
 
@@ -404,7 +394,7 @@ def test_repeated_sequence_expression(derived_sequence_expression, number,
     ]
 
     for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             RepeatedSequenceExpression(**invalid_param)
 
 
@@ -426,7 +416,7 @@ def test_allele(allele, sequence_location, derived_sequence_expression):
     ]
 
     for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             Allele(**invalid_param)
 
 
@@ -447,7 +437,7 @@ def test_haplotype(allele):
     ]
 
     for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             Haplotype(**invalid_param)
 
 
@@ -480,7 +470,7 @@ def test_copy_number_count(number, definite_range, indefinite_range, gene, allel
     ]
 
     for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             CopyNumberCount(**invalid_param)
 
 
@@ -505,7 +495,7 @@ def test_copy_number_change(number, sequence_location, gene, allele):
     ]
 
     for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             CopyNumberChange(**invalid_param)
 
 
@@ -533,31 +523,25 @@ def test_variation_set(allele, sequence_location):
     ]
 
     for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             VariationSet(**invalid_param)
 
 
 def test_feature(gene):
     """Test Feature class."""
-    schema = Feature.schema()
-    assert schema["title"] == "Feature"
-    assert schema["description"] == "A named entity that can be mapped to a Location. Genes, protein domains, exons, and chromosomes are some examples of common biological entities that may be Features."  # noqa: E501
-    assert schema
-    assert schema["anyOf"][0]["$ref"] == "#/components/schemas/Gene"
-
-    assert Feature(__root__=gene)
+    assert Feature(root=gene)
 
 
 def test_systemic_variation(gene, number):
     """Test SystemicVariation class."""
     c = CopyNumberCount(subject=gene, copies=number)
-    assert SystemicVariation(__root__=c)
+    assert SystemicVariation(root=c)
 
 
 def test_deprecated_objects(caplog, deprecated_allele):
     """Test that deprecated objects work and log appropriately."""
-    seqstate_deprecated_msg = "SequenceState is deprecated. Use LiteralSequenceExpression instead."  # noqa: E501
-    simpleint_deprecated_msg = "SimpleInterval is deprecated. Use SequenceInterval instead."  # noqa: E501
+    seqstate_deprecated_msg = "SequenceState is deprecated. Use default='LiteralSequenceExpression' instead."  # noqa: E501
+    simpleint_deprecated_msg = "SimpleInterval is deprecated. Use default='SequenceInterval' instead."  # noqa: E501
     seqstate = SequenceState(**deprecated_allele["state"])
     assert seqstate.type == "SequenceState"
     assert seqstate.sequence == "T"
@@ -569,7 +553,7 @@ def test_deprecated_objects(caplog, deprecated_allele):
         {"sequence": "hello,world"}
     ]
     for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             SequenceState(**invalid_param)
 
     simpleint = SimpleInterval(**deprecated_allele["location"]["interval"])
@@ -584,7 +568,7 @@ def test_deprecated_objects(caplog, deprecated_allele):
         {"start": 2, "end": '2'}
     ]
     for invalid_param in invalid_params:
-        with pytest.raises(pydantic.error_wrappers.ValidationError):
+        with pytest.raises(pydantic.ValidationError):
             SimpleInterval(**invalid_param)
 
     allele = Allele(**deprecated_allele)

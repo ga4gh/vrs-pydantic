@@ -5,7 +5,7 @@ The ga4gh/vrsatile/pydantic repo depends on VRS and VRSATILE models, and therefo
 
 | ga4gh.vrsatile.pydantic branch | ga4gh.vrsatile.pydantic version | VRS version | VRSATILE version |
 | ---- | --- | --- | --- |
-| main | 0.0.X | [1.X.X](https://github.com/ga4gh/vrs) | [main](https://github.com/ga4gh/vrsatile/tree/main) |
+| main | 0.2.X | [1.X.X](https://github.com/ga4gh/vrs) | [main](https://github.com/ga4gh/vrsatile/tree/main) |
 | metaschema-update | 0.1.X | [metaschema-update](https://github.com/ga4gh/vrs/tree/metaschema-update) | [metaschema-update](https://github.com/ga4gh/vrsatile/tree/metaschema-update) |
 
 

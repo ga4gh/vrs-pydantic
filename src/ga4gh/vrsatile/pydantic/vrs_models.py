@@ -5,12 +5,34 @@ import re
 from enum import Enum
 from typing import List, Optional, Union, Literal
 
-from pydantic import BaseModel, Field, constr, StrictInt, StrictStr, StrictBool, \
-    validator, StrictFloat, root_validator
-from pydantic.error_wrappers import ValidationError
+import pydantic_core
+from pydantic import Field, constr, StrictInt, StrictStr, StrictBool, \
+    field_validator, StrictFloat, model_validator, RootModel, ValidationError
 
 from ga4gh.vrsatile.pydantic import return_value, BaseModelForbidExtra, \
     BaseModelDeprecated
+
+
+def ensure_unique_items(items: List):
+    """Ensure items are unique"""
+    if not items:
+        return items
+
+    for i, value in enumerate(items, start=1):
+        if value in items[i:]:
+            raise ValidationError.from_exception_data(
+                "unique_items",
+                [
+                    {
+                        "type": pydantic_core.PydanticCustomError(
+                            "items must be unique",
+                            str(ValidationError)
+                        )
+                    }
+                ],
+            )
+
+    return items
 
 
 class VRSTypes(str, Enum):
@@ -66,68 +88,10 @@ class CopyChange(str, Enum):
 # These types are used solely within other definitions.
 
 
-class CURIE(BaseModelForbidExtra):
-    """A `W3C Compact URI <https://www.w3.org/TR/curie/>` formatted string.  A CURIE
-    string has the structure ``prefix``:``reference``, as defined by the W3C syntax.
-    """
-
-    __root__: constr(regex=r"^\w[^:]*:.+$") = Field(  # noqa: F722
-        ...,
-        description=("A `W3C Compact URI <https://www.w3.org/TR/curie/>`_ formatted "
-                     "string. A CURIE string has the structure "
-                     "``prefix``:``reference``, as defined by the W3C syntax."),
-        example="ensembl:ENSG00000139618"
-    )
-
-
-class HumanCytoband(BaseModelForbidExtra):
-    """A character string representing cytobands derived from the *International System
-    for Human Cytogenomic Nomenclature* (ISCN)
-    [guidelines](http://doi.org/10.1159/isbn.978-3-318-06861-0).
-    """
-
-    __root__: constr(regex=r"^cen|[pq](ter|([1-9][0-9]*(\.[1-9][0-9]*)?))$") = Field(  # noqa: F722, E501
-        ...,
-        description=("A character string representing cytobands derived from the "
-                     "*International System for Human Cytogenomic Nomenclature* (ISCN) "
-                     "`guidelines <http://doi.org/10.1159/isbn.978-3-318-06861-0>`_."),
-        example="q22.3"
-    )
-
-
-class Residue(BaseModelForbidExtra):
-    """A character representing a specific residue (i.e., molecular species) or
-    groupings of these ("ambiguity codes"), using `one-letter IUPAC abbreviations
-    <https://en.wikipedia.org/wiki/International_Union_of_Pure_and_Applied_Chemistry#Amino_acid_and_nucleotide_base_codes>`
-    for nucleic acids and amino acids.
-    """
-
-    __root__: constr(regex=r"[A-Z*\-]") = Field(  # noqa: F722
-        ...,
-        description=("A character representing a specific residue (i.e., molecular "
-                     "species) or groupings of these ('ambiguity codes'), using "
-                     "`one-letter IUPAC abbreviations "
-                     "<https://en.wikipedia.org/wiki/International_Union_of_Pure_and_Applied_Chemistry#Amino_acid_and_nucleotide_base_codes>`_ "  # noqa: E501
-                     "for nucleic acids and amino acids.")
-    )
-
-
-class Sequence(BaseModelForbidExtra):
-    """A character string of Residues that represents a biological sequence using the
-    conventional sequence order (5'-to-3' for nucleic acid sequences, and
-    amino-to-carboxyl for amino acid  sequences). IUPAC ambiguity codes are permitted in
-    Sequences.
-    """
-
-    __root__: constr(regex=r"^[A-Z*\-]*$") = Field(  # noqa: F722
-        ...,
-        description=("A character string of Residues that represents a biological "
-                     "sequence using the conventional sequence order (5'-to-3' for "
-                     "nucleic acid sequences, and amino-to-carboxyl for amino acid "
-                     "sequences). IUPAC ambiguity codes are permitted in Sequences."),
-        example="ACTG"
-    )
-
+CURIE = constr(pattern=r"^\w[^:]*:.+$")
+HUMAN_CYTOBAND = constr(pattern=r"^cen|[pq](ter|([1-9][0-9]*(\.[1-9][0-9]*)?))$")
+RESIDUE = constr(pattern=r"[A-Z*\-]")
+SEQUENCE = constr(pattern=r"^[A-Z*\-]*$")
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Numerics, Comparators, and Ranges
@@ -196,12 +160,12 @@ class SequenceInterval(BaseModelForbidExtra):
                      "range greater than the value of `start`.")
     )
 
-    @root_validator(pre=False, skip_on_failure=True)
+    @model_validator(mode="after")
     def check_start_end_value(cls, v):
         """Check that start is less than or equal to end and that both have minimum
         value of 0
         """
-        start = v.get("start")
+        start = v.start
         if start.type in {VRSTypes.NUMBER, VRSTypes.INDEFINITE_RANGE}:
             start_values = [start.value]
         else:
@@ -210,7 +174,7 @@ class SequenceInterval(BaseModelForbidExtra):
         for start_value in start_values:
             assert start_value >= 0, "`start` minimum value is 0"
 
-        end = v.get("end")
+        end = v.end
         if end.type in {VRSTypes.NUMBER, VRSTypes.INDEFINITE_RANGE}:
             end_values = [end.value]
         else:
@@ -233,21 +197,21 @@ class CytobandInterval(BaseModelForbidExtra):
     """
 
     type: Literal[VRSTypes.CYTOBAND_INTERVAL] = VRSTypes.CYTOBAND_INTERVAL
-    start: HumanCytoband = Field(
+    start: HUMAN_CYTOBAND = Field(
         ...,
         description=("The start cytoband region. MUST specify a region nearer the "
                      "terminal end (telomere) of the chromosome p-arm than `end`."),
         example="q22.2"
     )
-    end: HumanCytoband = Field(
+    end: HUMAN_CYTOBAND = Field(
         ...,
         description=("The end cytoband region. MUST specify a region nearer the "
                      "terminal end (telomere) of the chromosome q-arm than `start`."),
         example="q22.3"
     )
 
-    _get_start_val = validator("start", allow_reuse=True)(return_value)
-    _get_end_val = validator("end", allow_reuse=True)(return_value)
+    _get_start_val = field_validator("start")(return_value)
+    _get_end_val = field_validator("end")(return_value)
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -274,6 +238,7 @@ class ChromosomeLocation(BaseModelForbidExtra):
     """A Location on a chromosome defined by a species and chromosome name."""
 
     id: Optional[CURIE] = Field(
+        None,
         alias="_id",
         description="Location Id. MUST be unique within document."
     )
@@ -293,10 +258,10 @@ class ChromosomeLocation(BaseModelForbidExtra):
         ..., description='The chromosome region defined by a CytobandInterval'
     )
 
-    _get_id_val = validator("id", allow_reuse=True)(return_value)
-    _get_species_id_val = validator("species_id", allow_reuse=True)(return_value)
+    _get_id_val = field_validator("id")(return_value)
+    _get_species_id_val = field_validator("species_id")(return_value)
 
-    @validator("chr")
+    @field_validator("chr")
     def check_chr_value(cls, v):
         """Check chr value"""
         msg = "`chr` must be 1..22, X, or Y (case-sensitive)"
@@ -308,6 +273,7 @@ class SequenceLocation(BaseModelForbidExtra):
     """A Location defined by an interval on a referenced Sequence."""
 
     id: Optional[CURIE] = Field(
+        None,
         alias="_id",
         description="Variation Id. MUST be unique within document."
     )
@@ -321,15 +287,16 @@ class SequenceLocation(BaseModelForbidExtra):
         description="Reference sequence region defined by a SequenceInterval."
     )
 
-    _get_id_val = validator("id", allow_reuse=True)(return_value)
-    _get_sequence_id_val = validator('sequence_id', allow_reuse=True)(return_value)
+    _get_id_val = field_validator("id")(return_value)
+    _get_sequence_id_val = field_validator('sequence_id')(return_value)
 
 
-class Location(BaseModel):
+class Location(RootModel):
     """A contiguous segment of a biological sequence."""
 
-    __root__: Union[ChromosomeLocation, SequenceLocation] = Field(
-        ..., description="A contiguous segment of a biological sequence."
+    root: Union[ChromosomeLocation, SequenceLocation] = Field(
+        ..., description="A contiguous segment of a biological sequence.",
+        discriminator="type"
     )
 
 
@@ -342,9 +309,9 @@ class LiteralSequenceExpression(BaseModelForbidExtra):
 
     type: Literal[VRSTypes.LITERAL_SEQUENCE_EXPRESSION] = \
         VRSTypes.LITERAL_SEQUENCE_EXPRESSION
-    sequence: Sequence = Field(..., description="the literal Sequence expressed")
+    sequence: SEQUENCE = Field(..., description="the literal Sequence expressed")
 
-    _get_sequence_val = validator("sequence", allow_reuse=True)(return_value)
+    _get_sequence_val = field_validator("sequence")(return_value)
 
 
 class DerivedSequenceExpression(BaseModelForbidExtra):
@@ -381,7 +348,7 @@ class RepeatedSequenceExpression(BaseModelForbidExtra):
         ..., description="The count of repeated units, as an integer or inclusive range"
     )
 
-    @validator("count")
+    @field_validator("count")
     def check_count_value(cls, v):
         """Check count value"""
         if v.type in {VRSTypes.NUMBER, VRSTypes.INDEFINITE_RANGE}:
@@ -409,11 +376,10 @@ class ComposedSequenceExpression(BaseModelForbidExtra):
         ...,
         description=("An ordered list of SequenceExpression components comprising "
                      "the expression."),
-        min_items=2,
-        unique_items=True
+        min_length=2
     )
 
-    @validator("components", pre=False)
+    @field_validator("components")
     def ensure_contains_rse_or_dse(cls, v):
         """Ensure that either RepeatedSequenceExpression or DerivedSequenceExpression"""
         e_types = [e.type for e in v
@@ -423,16 +389,23 @@ class ComposedSequenceExpression(BaseModelForbidExtra):
         assert e_types, ("`components` must contain either "
                          "`RepeatedSequenceExpression` or `DerivedSequenceExpression`")
 
+        ensure_unique_items(v)
+        return v
 
-class SequenceExpression(BaseModel):
+
+class SequenceExpression(RootModel):
     """An expression describing a Sequence."""
 
-    __root__: Union[
+    root: Union[
         ComposedSequenceExpression,
         DerivedSequenceExpression,
         LiteralSequenceExpression,
         RepeatedSequenceExpression
-    ] = Field(..., description="An expression describing a Sequence.")
+    ] = Field(
+        ...,
+        description="An expression describing a Sequence.",
+        discriminator="type"
+    )
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -446,11 +419,11 @@ class SequenceState(BaseModelForbidExtra, BaseModelDeprecated):
     """
 
     type: Literal[VRSTypes.SEQUENCE_STATE] = VRSTypes.SEQUENCE_STATE
-    sequence: Sequence = Field(..., description="A string of Residues", example="C")
+    sequence: SEQUENCE = Field(..., description="A string of RESIDUEs", example="C")
 
     _replace_with = "LiteralSequenceExpression"
 
-    _get_sequence_val = validator("sequence", allow_reuse=True)(return_value)
+    _get_sequence_val = field_validator("sequence")(return_value)
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Feature
@@ -465,32 +438,18 @@ class Gene(BaseModelForbidExtra):
     type: Literal[VRSTypes.GENE] = VRSTypes.GENE
     gene_id: CURIE = Field(..., description="A CURIE reference to a Gene concept")
 
-    _get_gene_id_val = validator("gene_id", allow_reuse=True)(return_value)
+    _get_gene_id_val = field_validator("gene_id")(return_value)
 
 
-class Feature(BaseModelForbidExtra):
-    """A named entity that can be mapped to a Location. Genes, protein domains, exons,
-    and chromosomes are some examples of common biological entities that may be
-    Features.
-    """
+class Feature(RootModel):
+    """A named entity that can be mapped to a Location. Genes, protein domains, exons, and chromosomes are some examples of common biological entities that may be Features."""  # noqa: E501
 
-    __root__: Gene = Field(
+    root: Gene = Field(
         ...,
         description=("A named entity that can be mapped to a Location. Genes, protein "
                      "domains, exons, and chromosomes are some examples of common "
                      "biological entities that may be Features.")
     )
-
-    class Config:
-        """Configure Pydantic attributes."""
-
-        @staticmethod
-        def schema_extra(schema, model):
-            """Ensure JSON schema output matches original VRS model."""
-            if "$ref" in schema:
-                del schema["$ref"]
-            schema["anyOf"] = [{"$ref": "#/components/schemas/Gene"}]
-
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Molecular Variation
@@ -500,6 +459,7 @@ class Allele(BaseModelForbidExtra):
     """The state of a molecule at a Location."""
 
     id: Optional[CURIE] = Field(
+        None,
         alias="_id",
         description="Variation Id. MUST be unique within document."
     )
@@ -517,14 +477,15 @@ class Allele(BaseModelForbidExtra):
         SequenceState,
     ] = Field(..., description="An expression of the sequence state")
 
-    _get_id_val = validator("id", allow_reuse=True)(return_value)
-    _get_loc_val = validator("location", allow_reuse=True)(return_value)
+    _get_id_val = field_validator("id")(return_value)
+    _get_loc_val = field_validator("location")(return_value)
 
 
 class Haplotype(BaseModelForbidExtra):
     """A set of non-overlapping Allele members that co-occur on the same molecule."""
 
     id: Optional[CURIE] = Field(
+        None,
         alias="_id",
         description="Variation Id. MUST be unique within document."
     )
@@ -532,20 +493,39 @@ class Haplotype(BaseModelForbidExtra):
     members: List[Union[Allele, CURIE]] = Field(
         ...,
         description=("List of Alleles, or references to Alleles, that comprise this "
-                     "Haplotype."),
-        min_items=2,
-        unique_items=True
+                     "Haplotype.")
     )
 
-    _get_id_val = validator("id", allow_reuse=True)(return_value)
-    _get_members_val = validator("members", allow_reuse=True)(return_value)
+    _get_id_val = field_validator("id")(return_value)
+    _get_members_val = field_validator("members")(return_value)
+
+    @field_validator("members")
+    def ensure_unique_items(cls, members):
+        """Ensure members are unique"""
+        ensure_unique_items(members)
+
+        # min_length does not work for some reason, so manually do this check
+        if len(members) < 2:
+            raise ValidationError.from_exception_data(
+                "min_length",
+                [
+                    {
+                        "type": pydantic_core.PydanticCustomError(
+                            "`members` must have at least 2 items",
+                            str(ValidationError)
+                        )
+                    }
+                ],
+            )
+        return members
 
 
-class MolecularVariation(BaseModel):
+class MolecularVariation(RootModel):
     """A variation on a contiguous molecule."""
 
-    __root__: Union[Allele, Haplotype] = Field(
-        ..., description="A variation on a contiguous molecule."
+    root: Union[Allele, Haplotype] = Field(
+        ..., description="A variation on a contiguous molecule.",
+        discriminator="type"
     )
 
 
@@ -559,6 +539,7 @@ class CopyNumberChange(BaseModelForbidExtra):
     """
 
     id: Optional[CURIE] = Field(
+        None,
         alias="_id",
         description="Variation Id. MUST be unique within document."
     )
@@ -581,8 +562,8 @@ class CopyNumberChange(BaseModelForbidExtra):
                      "'efo:0030072' (high-level gain).")
     )
 
-    _get_id_val = validator("id", allow_reuse=True)(return_value)
-    _get_subject_val = validator("subject", allow_reuse=True)(return_value)
+    _get_id_val = field_validator("id")(return_value)
+    _get_subject_val = field_validator("subject")(return_value)
 
 
 class CopyNumberCount(BaseModelForbidExtra):
@@ -591,6 +572,7 @@ class CopyNumberCount(BaseModelForbidExtra):
     """
 
     id: Optional[CURIE] = Field(
+        None,
         alias="_id",
         description="Variation Id. MUST be unique within document."
     )
@@ -604,8 +586,8 @@ class CopyNumberCount(BaseModelForbidExtra):
         description="The integral number of copies of the subject in a system"
     )
 
-    _get_id_val = validator("id", allow_reuse=True)(return_value)
-    _get_subject_val = validator("subject", allow_reuse=True)(return_value)
+    _get_id_val = field_validator("id")(return_value)
+    _get_subject_val = field_validator("subject")(return_value)
 
 
 class GenotypeMember(BaseModelForbidExtra):
@@ -628,6 +610,7 @@ class Genotype(BaseModelForbidExtra):
     """A quantified set of MolecularVariation associated with a genomic locus."""
 
     id: Optional[CURIE] = Field(
+        None,
         alias="_id",
         description="Variation Id. MUST be unique within document."
     )
@@ -636,8 +619,7 @@ class Genotype(BaseModelForbidExtra):
         ...,
         description=("Each GenotypeMember in `members` describes a MolecularVariation "
                      "and the count of that variation at the locus."),
-        min_items=1,
-        unique_items=True
+        min_length=1
     )
     count: Union[DefiniteRange, IndefiniteRange, Number] = Field(
         ...,
@@ -649,18 +631,25 @@ class Genotype(BaseModelForbidExtra):
                      "are not  explicitly described.")
     )
 
-    _get_id_val = validator("id", allow_reuse=True)(return_value)
+    _get_id_val = field_validator("id")(return_value)
+
+    @field_validator("members")
+    def ensure_unique_items(cls, members):
+        """Ensure members are unique"""
+        ensure_unique_items(members)
+        return members
 
 
-class SystemicVariation(BaseModel):
+class SystemicVariation(RootModel):
     """A Variation of multiple molecules in the context of a system, e.g. a genome,
     sample, or homologous chromosomes.
     """
 
-    __root__: Union[CopyNumberChange, CopyNumberCount, Genotype] = Field(
+    root: Union[CopyNumberChange, CopyNumberCount, Genotype] = Field(
         ...,
         description=("A Variation of multiple molecules in the context of a system, "
-                     "e.g. a genome, sample, or homologous chromosomes.")
+                     "e.g. a genome, sample, or homologous chromosomes."),
+        discriminator="type"
     )
 
 
@@ -671,6 +660,7 @@ class Text(BaseModelForbidExtra):
     """A free-text definition of variation."""
 
     id: Optional[CURIE] = Field(
+        None,
         alias="_id",
         description="Variation Id. MUST be unique within document."
     )
@@ -681,13 +671,14 @@ class Text(BaseModelForbidExtra):
                      "other subclasses of Variation.")
     )
 
-    _get_id_val = validator("id", allow_reuse=True)(return_value)
+    _get_id_val = field_validator("id")(return_value)
 
 
 class VariationSet(BaseModelForbidExtra):
     """An unconstrained set of Variation members."""
 
     id: Optional[CURIE] = Field(
+        None,
         alias="_id",
         description="Variation Id. MUST be unique within document."
     )
@@ -709,32 +700,27 @@ class VariationSet(BaseModelForbidExtra):
                      "required, but MAY be empty.")
     )
 
-    _get_id_val = validator("id", allow_reuse=True)(return_value)
-    _get_members_val = validator("members", allow_reuse=True)(return_value)
+    _get_id_val = field_validator("id")(return_value)
+    _get_members_val = field_validator("members")(return_value)
 
-    @validator("members", pre=False)
+    @field_validator("members")
     def ensure_unique_items(cls, members):
-        """Ensure items are unique"""
-        if not members:
-            return members
-
-        for i, value in enumerate(members, start=1):
-            if value in members[i:]:
-                raise ValidationError("`members` must have unique items")
-
+        """Ensure members are unique"""
+        ensure_unique_items(members)
         return members
 
 
-class UtilityVariation(BaseModel):
+class UtilityVariation(RootModel):
     """A collection of Variation subclasses that cannot be constrained to a specific
     class of biological variation, but are necessary for some applications of VRS.
     """
 
-    __root__: Union[Text, VariationSet] = Field(
+    root: Union[Text, VariationSet] = Field(
         ...,
         description=("A collection of Variation subclasses that cannot be constrained "
                      "to a specific class of biological variation, but are necessary "
-                     "for some applications of VRS.")
+                     "for some applications of VRS."),
+        discriminator="type"
     )
 
 
@@ -742,10 +728,10 @@ class UtilityVariation(BaseModel):
 # Variation
 
 
-class Variation(BaseModel):
+class Variation(RootModel):
     """A representation of the state of one or more biomolecules."""
 
-    __root__: Union[
+    root: Union[
         Allele,
         CopyNumberChange,
         CopyNumberCount,
@@ -754,8 +740,9 @@ class Variation(BaseModel):
         Text,
         VariationSet,
     ] = Field(
-        ..., description="A representation of the state of one or more biomolecules."
+        ..., description="A representation of the state of one or more biomolecules.",
+        discriminator="type"
     )
 
 
-VariationSet.update_forward_refs()
+VariationSet.model_rebuild()
